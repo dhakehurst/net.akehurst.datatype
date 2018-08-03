@@ -1,0 +1,16 @@
+plugins {
+    id 'java-gradle-plugin'
+}
+
+
+dependencies {
+    implementation gradleApi()
+    implementation localGroovy()
+    
+    implementation project(":datatype-api")
+    
+    implementation "com.github.jknack:handlebars:4.1.0"
+    implementation "io.github.classgraph:classgraph:4.0.3"
+}
+
+
