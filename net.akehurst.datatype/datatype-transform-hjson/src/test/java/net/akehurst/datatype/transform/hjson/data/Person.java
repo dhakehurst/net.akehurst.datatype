@@ -21,6 +21,7 @@ import java.util.List;
 
 import net.akehurst.datatype.annotation.Datatype;
 import net.akehurst.datatype.annotation.Identity;
+import net.akehurst.datatype.annotation.Reference;
 
 @Datatype
 public class Person {
@@ -28,11 +29,14 @@ public class Person {
     private final String firstname;
     private final List<String> othernames;
     private final String lastname;
+    private Person inRelationshipWith;
+    private final List<Person> friends;
 
     public Person(final String firstname, final String lastname) {
         this.firstname = firstname;
         this.othernames = new ArrayList<>();
         this.lastname = lastname;
+        this.friends = new ArrayList<>();
     }
 
     @Identity
@@ -48,4 +52,19 @@ public class Person {
     public String getLastname() {
         return this.lastname;
     }
+
+    @Reference
+    public Person getInRelationshipWith() {
+        return this.inRelationshipWith;
+    }
+
+    public void setInRelationshipWith(final Person value) {
+        this.inRelationshipWith = value;
+    }
+
+    @Reference
+    public List<Person> getFriends() {
+        return this.friends;
+    }
+
 }

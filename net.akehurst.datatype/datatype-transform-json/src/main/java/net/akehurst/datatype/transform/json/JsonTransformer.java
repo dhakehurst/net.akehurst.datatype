@@ -14,27 +14,16 @@
  * limitations under the License.
  */
 
-package net.akehurst.datatype.transform.hjson.data;
+package net.akehurst.datatype.transform.json;
 
-import java.util.HashSet;
-import java.util.Set;
+import org.json.JSONObject;
 
-import net.akehurst.datatype.annotation.Datatype;
+public interface JsonTransformer {
 
-@Datatype
-public class AddressBook {
+    JSONObject toJson(Object datatype);
 
-    private Set<Contact> contacts;
+    <T> T toDatatype(JSONObject hjson);
 
-    public AddressBook() {
-        this.contacts = new HashSet<>();
-    }
+    <T> T toDatatype(Class<T> class_, JSONObject hjson);
 
-    public Set<Contact> getContacts() {
-        return this.contacts;
-    }
-
-    public void setContacts(final Set<Contact> value) {
-        this.contacts = value;
-    }
 }

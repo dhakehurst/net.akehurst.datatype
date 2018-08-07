@@ -14,27 +14,10 @@
  * limitations under the License.
  */
 
-package net.akehurst.datatype.transform.hjson.data;
+package net.akehurst.datatype.transform.json.rule;
 
-import java.util.HashSet;
-import java.util.Set;
+import net.akehurst.transform.binary.api.BinaryRule;
 
-import net.akehurst.datatype.annotation.Datatype;
+public abstract class JavaValue2JsonValue<L extends Object, R extends Object> implements BinaryRule<L, R> {
 
-@Datatype
-public class AddressBook {
-
-    private Set<Contact> contacts;
-
-    public AddressBook() {
-        this.contacts = new HashSet<>();
-    }
-
-    public Set<Contact> getContacts() {
-        return this.contacts;
-    }
-
-    public void setContacts(final Set<Contact> value) {
-        this.contacts = value;
-    }
 }

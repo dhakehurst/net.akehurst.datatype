@@ -14,27 +14,38 @@
  * limitations under the License.
  */
 
-package net.akehurst.datatype.transform.hjson.data;
+package net.akehurst.datatype.transform.json.data;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 import net.akehurst.datatype.annotation.Datatype;
+import net.akehurst.datatype.annotation.Identity;
 
 @Datatype
-public class AddressBook {
+public class Person {
 
-    private Set<Contact> contacts;
+    private final String firstname;
+    private final List<String> othernames;
+    private final String lastname;
 
-    public AddressBook() {
-        this.contacts = new HashSet<>();
+    public Person(final String firstname, final String lastname) {
+        this.firstname = firstname;
+        this.othernames = new ArrayList<>();
+        this.lastname = lastname;
     }
 
-    public Set<Contact> getContacts() {
-        return this.contacts;
+    @Identity
+    public String getFirstname() {
+        return this.firstname;
     }
 
-    public void setContacts(final Set<Contact> value) {
-        this.contacts = value;
+    public List<String> getOthernames() {
+        return this.othernames;
+    }
+
+    @Identity
+    public String getLastname() {
+        return this.lastname;
     }
 }

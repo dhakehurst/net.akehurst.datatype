@@ -17,12 +17,39 @@
 package net.akehurst.datatype.transform.hjson.data;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
 
+import net.akehurst.datatype.annotation.Datatype;
+import net.akehurst.datatype.annotation.Identity;
+
+@Datatype
 public class Contact {
 
-    private String alias;
-    private Person fullname;
-    private Map<Instant, Address> address;
+    private final String alias;
+    private Person person;
+    private final Map<Instant, Address> address;
+
+    public Contact(final String alias) {
+        this.alias = alias;
+        this.address = new HashMap<>();
+    }
+
+    @Identity
+    public String getAlias() {
+        return this.alias;
+    }
+
+    public Person getPerson() {
+        return this.person;
+    }
+
+    public void setPerson(final Person fullname) {
+        this.person = fullname;
+    }
+
+    public Map<Instant, Address> getAddress() {
+        return this.address;
+    }
 
 }

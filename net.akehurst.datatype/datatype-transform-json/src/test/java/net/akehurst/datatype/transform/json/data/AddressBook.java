@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package net.akehurst.datatype.transform.hjson.data;
+package net.akehurst.datatype.transform.json.data;
 
-import java.util.HashSet;
 import java.util.Set;
 
 import net.akehurst.datatype.annotation.Datatype;
@@ -26,15 +25,4 @@ public class AddressBook {
 
     private Set<Contact> contacts;
 
-    public AddressBook() {
-        this.contacts = new HashSet<>();
-    }
-
-    public Set<Contact> getContacts() {
-        return this.contacts;
-    }
-
-    public void setContacts(final Set<Contact> value) {
-        this.contacts = value;
-    }
 }

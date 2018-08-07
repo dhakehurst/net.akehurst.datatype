@@ -67,10 +67,14 @@ subprojects {
 				name 'bintray-akehurst'
 				url ""
 			}
+            maven {
+                name 'itemis-akehurst'
+                url "https://projects.itemis.de/nexus/content/repositories/akehurst/"
+            }
 		}
 	
 	    publications {
-	        mavenJava(MavenPublication) {
+	        datatype(MavenPublication) {
 	          	groupId "${group}"
 	        	artifactId "${project.name}".replace("${group}.", "")
 				version "${version}"

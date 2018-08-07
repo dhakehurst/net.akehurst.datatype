@@ -25,6 +25,7 @@ import net.akehurst.datatype.transform.hjson.rule.Instant2JsonValue;
 import net.akehurst.datatype.transform.hjson.rule.Integer2JsonValue;
 import net.akehurst.datatype.transform.hjson.rule.List2JsonArray;
 import net.akehurst.datatype.transform.hjson.rule.Long2JsonValue;
+import net.akehurst.datatype.transform.hjson.rule.Map2JsonObject;
 import net.akehurst.datatype.transform.hjson.rule.Object2JsonValue;
 import net.akehurst.datatype.transform.hjson.rule.Set2JsonArray;
 import net.akehurst.datatype.transform.hjson.rule.String2JsonValue;
@@ -32,6 +33,9 @@ import net.akehurst.transform.binary.api.BinaryRule;
 import net.akehurst.transform.binary.basic.BinaryTransformerBasic;
 
 public class HJsonTransformerDefault extends BinaryTransformerBasic implements HJsonTransformer {
+
+    private Object javaRoot;
+    private JsonValue hjsonRoot;
 
     public HJsonTransformerDefault() {
         super.registerRule((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class);
@@ -43,23 +47,43 @@ public class HJsonTransformerDefault extends BinaryTransformerBasic implements H
         super.registerRule(Instant2JsonValue.class);
         super.registerRule(List2JsonArray.class);
         super.registerRule(Set2JsonArray.class);
+        super.registerRule(Map2JsonObject.class);
         super.registerRule(Datatype2HJsonObject.class);
+    }
+
+    public JsonValue getHJsonRoot() {
+        return this.hjsonRoot;
+    }
+
+    public void setHJsonRoot(final JsonValue value) {
+        this.hjsonRoot = value;
+    }
+
+    public Object getJavaRoot() {
+        return this.javaRoot;
+    }
+
+    public void setJavaRoot(final Object value) {
+        this.javaRoot = value;
     }
 
     @Override
     public JsonValue toHJson(final Object datatype) {
+        this.setJavaRoot(datatype);
         final JsonValue hjson = this.transformLeft2Right((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class, datatype);
         return hjson;
     }
 
     @Override
     public <T> T toDatatype(final Class<T> class_, final JsonValue hjson) {
+        this.setHJsonRoot(hjson);
         final Object datatype = this.transformRight2Left((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class, hjson);
         return (T) datatype;
     }
 
     @Override
     public <T> T toDatatype(final JsonValue hjson) {
+        this.setHJsonRoot(hjson);
         final Object datatype = this.transformRight2Left((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class, hjson);
         return (T) datatype;
     }

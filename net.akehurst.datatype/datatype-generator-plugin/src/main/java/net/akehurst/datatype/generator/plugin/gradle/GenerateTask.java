@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.artifacts.Configuration;
@@ -234,6 +235,8 @@ public class GenerateTask extends DefaultTask {
         mType.put("name", fullName.substring(fullName.lastIndexOf('.') + 1));
         if (ci.implementsInterface("java.util.Collection")) {
             mType.put("isCollection", true);
+            mType.put("isOrdered", Objects.equals("java.util.List", ci.getName()));
+            GenerateTask.LOGGER.error("isOrdered " + Objects.equals("java.util.List", ci.getName()));
 
             final Map<String, Object> et = this.createPropertyType(tArgs.get(0).getTypeSignature());
             GenerateTask.LOGGER.info("Collection with elementType " + tArgs.get(0).getTypeSignature());

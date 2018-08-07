@@ -1,0 +1,10 @@
+dependencies {
+    
+    api project(":datatype-api")
+    api "org.json:json:20180130"
+    api "org.jooq:jool-java-8:0.9.14"
+    
+    implementation "net.akehurst.transform:binary:2.2.0"
+    
+    testImplementation "junit:junit:4.12"
+}

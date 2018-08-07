@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-package net.akehurst.datatype.transform.hjson.rule;
+package net.akehurst.datatype.transform.json.rule;
 
 import java.util.Objects;
 
 import org.hjson.JsonValue;
+import org.jooq.lambda.Unchecked;
 
 import net.akehurst.transform.binary.api.BinaryTransformer;
 
-public class Enum2JsonValue extends Object2JsonValue<Enum<?>, JsonValue> {
+public class Enum2JsonValue extends JavaValue2JsonValue<Enum<?>, JsonValue> {
 
     @Override
     public boolean isValidForLeft2Right(final Enum<?> left) {
@@ -48,7 +49,7 @@ public class Enum2JsonValue extends Object2JsonValue<Enum<?>, JsonValue> {
     public Enum<?> constructRight2Left(final JsonValue right, final BinaryTransformer transformer) {
         final String rightStr = right.asString();
         final int index = rightStr.lastIndexOf('.');
-        final Class<?> enumType = RT.wrap(() -> Class.forName(rightStr.substring(0, index - 1)));
+        final Class<?> enumType = Unchecked.supplier(() -> Class.forName(rightStr.substring(0, index - 1))).get();
         return Enum.valueOf((Class) enumType, rightStr.substring(index + 1));
     }
 
