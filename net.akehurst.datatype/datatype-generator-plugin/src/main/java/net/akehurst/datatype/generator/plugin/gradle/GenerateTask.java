@@ -179,6 +179,7 @@ public class GenerateTask extends DefaultTask {
             final Map<String, Object> dtModel = new HashMap<>();
             datatypes.add(dtModel);
             dtModel.put("name", cls.getName().substring(cls.getName().lastIndexOf(".") + 1));
+            dtModel.put("fullName", cls.getName());
 
             final List<Map<String, Object>> extends_ = new ArrayList<>();
             dtModel.put("extends", extends_);
