@@ -141,13 +141,39 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
         return this.resolveReference(path, hjt.getHJsonRoot());
     }
 
+    private boolean isDatatype(final Class<?> cls) {
+        final Datatype ann = cls.getAnnotation(Datatype.class);
+        if (null == ann) {
+            // check interfaces, superclasses are included because @Datatype is marked as @Inherited
+            for (final Class<?> intf : cls.getInterfaces()) {
+                if (this.isDatatype(intf)) {
+                    return true;
+                }
+            }
+            // check interfaces of superclass
+            return this.isDatatype(cls.getSuperclass());
+        } else {
+            return true;
+        }
+    }
+
+    private boolean isIdentityAccessor(final Method m) {
+        boolean res = true;
+        res &= null != m.getDeclaringClass().getAnnotation(Datatype.class);
+        res &= null != m.getAnnotation(Identity.class);
+        return res;
+    }
+
+    private boolean isPropertyAccessor(final Method m) {
+        return false;
+    }
+
     @Override
     public boolean isValidForLeft2Right(final Object left) {
         if (null == left) {
             return false;
         }
-        final Datatype ann = left.getClass().getAnnotation(Datatype.class);
-        return null != ann;
+        return this.isDatatype(left.getClass());
     }
 
     @Override
@@ -198,7 +224,7 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
         final Class<?> leftClass = RT.wrap(() -> Class.forName(className));
         for (final Method m : leftClass.getMethods()) {
             final Identity idAnn = m.getAnnotation(Identity.class);
-            if (m.getDeclaringClass() != Object.class && null != idAnn) {
+            if (m.getDeclaringClass() != Object.class && null != idAnn && null != m.getDeclaringClass().getAnnotation(Datatype.class)) {
                 parameterTypes.add(m.getReturnType());
                 final JsonValue mv = right.get(this.getMemberName(m));
                 final Reference refAnn = m.getAnnotation(Reference.class);
@@ -225,7 +251,8 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
             final Query queryAnn = m.getAnnotation(Query.class);
             final Identity idAnn = m.getAnnotation(Identity.class);
             // TODO: may need to change this '&& 0==m.getParameters().length' to support getters with args for e.g. maps!
-            if (m.getDeclaringClass() != Object.class && null == queryAnn && null == idAnn && 0 == m.getParameters().length && m.getName().startsWith("get")) {
+            if (m.getDeclaringClass() != Object.class && null != m.getDeclaringClass().getAnnotation(Datatype.class) && null == queryAnn && null == idAnn
+                    && 0 == m.getParameters().length && m.getName().startsWith("get")) {
                 final String memberName = this.getMemberName(m);
                 final Object value = RT.wrap(() -> m.invoke(left));
                 if (null != value) {
@@ -248,7 +275,8 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
         for (final Method m : left.getClass().getMethods()) {
             final Query queryAnn = m.getAnnotation(Query.class);
             final Identity idAnn = m.getAnnotation(Identity.class);
-            if (null == queryAnn && null == idAnn && 0 == m.getParameters().length && m.getName().startsWith("get")) {
+            if (null == queryAnn && null == idAnn && null != m.getDeclaringClass().getAnnotation(Datatype.class) && 0 == m.getParameters().length
+                    && m.getName().startsWith("get")) {
                 final String memberName = this.getMemberName(m);
                 final JsonValue memberValue = right.get(memberName);
                 if (null != memberValue) {
