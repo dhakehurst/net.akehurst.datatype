@@ -36,7 +36,7 @@ public class Set2JsonArray extends Object2JsonValue<Set<Object>, JsonObject> {
 
     @Override
     public boolean isValidForRight2Left(final JsonObject right) {
-        return null != right && Objects.equals("Set", right.getString("$class", ""));
+        return null != right && Objects.equals("Set", right.getString("$type", ""));
     }
 
     @Override
@@ -47,7 +47,7 @@ public class Set2JsonArray extends Object2JsonValue<Set<Object>, JsonObject> {
     @Override
     public JsonObject constructLeft2Right(final Set<Object> left, final BinaryTransformer transformer) {
         final JsonObject right = new JsonObject();
-        right.add("$class", "Set");
+        right.add("$type", "Set");
         return right;
     }
 
@@ -59,7 +59,7 @@ public class Set2JsonArray extends Object2JsonValue<Set<Object>, JsonObject> {
     @Override
     public void updateLeft2Right(final Set<Object> left, final JsonObject right, final BinaryTransformer transformer) {
         final JsonArray elements = new JsonArray();
-        right.add("elements", elements);
+        right.add("$elements", elements);
         for (final Object value : left) {
             final JsonValue jv = transformer.transformLeft2Right((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class, value);
             elements.add(jv);
@@ -69,7 +69,7 @@ public class Set2JsonArray extends Object2JsonValue<Set<Object>, JsonObject> {
 
     @Override
     public void updateRight2Left(final Set<Object> left, final JsonObject right, final BinaryTransformer transformer) {
-        for (final JsonValue jv : right.get("elements").asArray()) {
+        for (final JsonValue jv : right.get("$elements").asArray()) {
             final Object o = transformer.transformRight2Left((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class, jv);
             left.add(o);
         }

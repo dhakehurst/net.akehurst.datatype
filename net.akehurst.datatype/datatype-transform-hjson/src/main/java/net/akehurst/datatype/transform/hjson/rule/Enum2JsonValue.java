@@ -18,11 +18,11 @@ package net.akehurst.datatype.transform.hjson.rule;
 
 import java.util.Objects;
 
-import org.hjson.JsonValue;
+import org.hjson.JsonObject;
 
 import net.akehurst.transform.binary.api.BinaryTransformer;
 
-public class Enum2JsonValue extends Object2JsonValue<Enum<?>, JsonValue> {
+public class Enum2JsonValue extends Object2JsonValue<Enum<?>, JsonObject> {
 
     @Override
     public boolean isValidForLeft2Right(final Enum<?> left) {
@@ -30,35 +30,39 @@ public class Enum2JsonValue extends Object2JsonValue<Enum<?>, JsonValue> {
     }
 
     @Override
-    public boolean isValidForRight2Left(final JsonValue right) {
-        return right.isString();
+    public boolean isValidForRight2Left(final JsonObject right) {
+        return Objects.equals("Enum", right.getString("$type", ""));
     }
 
     @Override
-    public boolean isAMatch(final Enum<?> left, final JsonValue right, final BinaryTransformer transformer) {
+    public boolean isAMatch(final Enum<?> left, final JsonObject right, final BinaryTransformer transformer) {
         return Objects.equals(left.getClass().getName() + "." + left.toString(), right.asString());
     }
 
     @Override
-    public JsonValue constructLeft2Right(final Enum<?> left, final BinaryTransformer transformer) {
-        return JsonValue.valueOf(left.getClass().getName() + "." + left.toString());
+    public JsonObject constructLeft2Right(final Enum<?> left, final BinaryTransformer transformer) {
+        final JsonObject right = new JsonObject();
+        right.add("$type", "Enum");
+        right.add("$class", left.getClass().getName());
+        right.add("$value", left.toString());
+        return right;
     }
 
     @Override
-    public Enum<?> constructRight2Left(final JsonValue right, final BinaryTransformer transformer) {
-        final String rightStr = right.asString();
-        final int index = rightStr.lastIndexOf('.');
-        final Class<?> enumType = RT.wrap(() -> Class.forName(rightStr.substring(0, index - 1)));
-        return Enum.valueOf((Class) enumType, rightStr.substring(index + 1));
+    public Enum<?> constructRight2Left(final JsonObject right, final BinaryTransformer transformer) {
+        final String valueStr = right.getString("$value", "");
+        final String className = right.getString("$class", "");
+        final Class<?> enumType = RT.wrap(() -> Class.forName(className));
+        return Enum.valueOf((Class) enumType, valueStr);
     }
 
     @Override
-    public void updateLeft2Right(final Enum<?> left, final JsonValue right, final BinaryTransformer transformer) {
+    public void updateLeft2Right(final Enum<?> left, final JsonObject right, final BinaryTransformer transformer) {
 
     }
 
     @Override
-    public void updateRight2Left(final Enum<?> left, final JsonValue right, final BinaryTransformer transformer) {
+    public void updateRight2Left(final Enum<?> left, final JsonObject right, final BinaryTransformer transformer) {
 
     }
 

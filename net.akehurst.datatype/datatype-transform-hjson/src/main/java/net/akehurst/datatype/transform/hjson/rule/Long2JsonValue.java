@@ -31,7 +31,7 @@ public class Long2JsonValue extends Object2JsonValue<Long, JsonValue> {
 
     @Override
     public boolean isValidForRight2Left(final JsonValue right) {
-        return right.isNumber();
+        return right.isNumber(); // TODO: Integer vs long ?
     }
 
     @Override

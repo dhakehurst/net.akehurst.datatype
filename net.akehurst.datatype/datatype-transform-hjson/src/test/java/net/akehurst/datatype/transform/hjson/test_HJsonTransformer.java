@@ -16,10 +16,13 @@
 
 package net.akehurst.datatype.transform.hjson;
 
+import java.util.Objects;
+
 import org.hjson.JsonArray;
 import org.hjson.JsonObject;
 import org.hjson.JsonValue;
 import org.hjson.Stringify;
+import org.jooq.lambda.Seq;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -158,10 +161,13 @@ public class test_HJsonTransformer {
 
         final JsonObject hjson = new JsonObject();
         hjson.add("$class", AddressBook.class.getName());
-        final JsonArray contacts = new JsonArray();
+        final JsonObject contacts = new JsonObject();
+        contacts.add("$class", "Set");
+        final JsonArray elements = new JsonArray();
+        contacts.add("elements", elements);
         hjson.add("contacts", contacts);
-        contacts.add(c1);
-        contacts.add(c2);
+        elements.add(c1);
+        elements.add(c2);
 
         final AddressBook datatype = this.sut.toDatatype(hjson);
 
@@ -169,6 +175,7 @@ public class test_HJsonTransformer {
 
         Assert.assertEquals(hjson.get("$class").asString(), datatype.getClass().getName());
         Assert.assertEquals(2, datatype.getContacts().size());
-        Assert.assertEquals(p2.get("firstname").asString(), datatype.getContacts().iterator().next().getPerson().getInRelationshipWith().getFirstname());
+        Assert.assertEquals(p2.get("firstname").asString(), Seq.seq(datatype.getContacts()).findFirst(c -> Objects.equals("Fred", c.getPerson().getFirstname()))
+                .get().getPerson().getInRelationshipWith().getFirstname());
     }
 }

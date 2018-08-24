@@ -36,7 +36,7 @@ public class Map2JsonObject extends Object2JsonValue<Map<Object, Object>, JsonOb
 
     @Override
     public boolean isValidForRight2Left(final JsonObject right) {
-        return null != right && Objects.equals("Map", right.getString("$class", ""));
+        return null != right && Objects.equals("Map", right.getString("$type", ""));
     }
 
     @Override
@@ -47,7 +47,7 @@ public class Map2JsonObject extends Object2JsonValue<Map<Object, Object>, JsonOb
     @Override
     public JsonObject constructLeft2Right(final Map<Object, Object> left, final BinaryTransformer transformer) {
         final JsonObject right = new JsonObject();
-        right.add("$class", "Map");
+        right.add("$type", "Map");
         return right;
     }
 
@@ -59,7 +59,7 @@ public class Map2JsonObject extends Object2JsonValue<Map<Object, Object>, JsonOb
     @Override
     public void updateLeft2Right(final Map<Object, Object> left, final JsonObject right, final BinaryTransformer transformer) {
         final JsonArray elements = new JsonArray();
-        right.add("elements", elements);
+        right.add("$elements", elements);
         for (final Map.Entry<Object, Object> me : left.entrySet()) {
             final JsonValue jk = transformer.transformLeft2Right((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class, me.getKey());
             final JsonValue jv = transformer.transformLeft2Right((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class, me.getValue());

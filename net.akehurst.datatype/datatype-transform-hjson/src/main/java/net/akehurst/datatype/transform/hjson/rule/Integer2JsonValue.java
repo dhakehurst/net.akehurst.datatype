@@ -36,7 +36,7 @@ public class Integer2JsonValue extends Object2JsonValue<Integer, JsonValue> {
 
     @Override
     public boolean isAMatch(final Integer left, final JsonValue right, final BinaryTransformer transformer) {
-        return Objects.equals(left, right.asString());
+        return Objects.equals(left, right.asInt());
     }
 
     @Override

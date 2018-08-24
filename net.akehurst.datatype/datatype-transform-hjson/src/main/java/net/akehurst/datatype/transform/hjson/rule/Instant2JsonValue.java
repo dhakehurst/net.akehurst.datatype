@@ -19,11 +19,11 @@ package net.akehurst.datatype.transform.hjson.rule;
 import java.time.Instant;
 import java.util.Objects;
 
-import org.hjson.JsonValue;
+import org.hjson.JsonObject;
 
 import net.akehurst.transform.binary.api.BinaryTransformer;
 
-public class Instant2JsonValue extends Object2JsonValue<Instant, JsonValue> {
+public class Instant2JsonValue extends Object2JsonValue<Instant, JsonObject> {
 
     @Override
     public boolean isValidForLeft2Right(final Instant left) {
@@ -31,32 +31,34 @@ public class Instant2JsonValue extends Object2JsonValue<Instant, JsonValue> {
     }
 
     @Override
-    public boolean isValidForRight2Left(final JsonValue right) {
-        return right.isNumber();
+    public boolean isValidForRight2Left(final JsonObject right) {
+        return Objects.equals("Instant", right.getString("$type", ""));
     }
 
     @Override
-    public boolean isAMatch(final Instant left, final JsonValue right, final BinaryTransformer transformer) {
-        return Objects.equals(left, right.asString());
+    public boolean isAMatch(final Instant left, final JsonObject right, final BinaryTransformer transformer) {
+        return Objects.equals(left, Instant.parse(right.getString("$value", "")));
     }
 
     @Override
-    public JsonValue constructLeft2Right(final Instant left, final BinaryTransformer transformer) {
-        return JsonValue.valueOf(left.toString());
+    public JsonObject constructLeft2Right(final Instant left, final BinaryTransformer transformer) {
+        final JsonObject right = new JsonObject();
+        right.add("$type", "Instant");
+        return right;
     }
 
     @Override
-    public Instant constructRight2Left(final JsonValue right, final BinaryTransformer transformer) {
-        return Instant.parse(right.asString());
+    public Instant constructRight2Left(final JsonObject right, final BinaryTransformer transformer) {
+        return Instant.parse(right.getString("$value", ""));
     }
 
     @Override
-    public void updateLeft2Right(final Instant left, final JsonValue right, final BinaryTransformer transformer) {
-
+    public void updateLeft2Right(final Instant left, final JsonObject right, final BinaryTransformer transformer) {
+        right.add("$value", left.toString());
     }
 
     @Override
-    public void updateRight2Left(final Instant left, final JsonValue right, final BinaryTransformer transformer) {
+    public void updateRight2Left(final Instant left, final JsonObject right, final BinaryTransformer transformer) {
 
     }
 

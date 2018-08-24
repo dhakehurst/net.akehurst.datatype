@@ -39,6 +39,7 @@ import net.akehurst.datatype.annotation.Reference;
 import net.akehurst.datatype.transform.hjson.HJsonTransformerDefault;
 import net.akehurst.transform.binary.api.BinaryRule;
 import net.akehurst.transform.binary.api.BinaryTransformer;
+import net.akehurst.transform.binary.api.TransformException;
 
 /**
  * The class for the LHS objects must be annotated with @Datatype.
@@ -55,7 +56,11 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
     private Method getMutator(final Method accessor) {
         final String muName = "set" + accessor.getName().substring(3);
         final Class<?> type = accessor.getReturnType();
-        return RT.wrap(() -> accessor.getDeclaringClass().getMethod(muName, type));
+        try {
+            return accessor.getDeclaringClass().getMethod(muName, type);
+        } catch (NoSuchMethodException | SecurityException e) {
+            return null;
+        }
     }
 
     private List<String> createPath(final Object from, final Object to) {
@@ -104,11 +109,13 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
         if (null == path) {
             final JsonObject reference = new JsonObject();
             final String refStr = "<Unknown reference>";
+            reference.add("$class", "Reference");
             reference.add("$ref", refStr);
             return reference;
         } else {
             final JsonObject reference = new JsonObject();
             final String refStr = "#/" + Seq.seq(path).toString("/");
+            reference.add("$class", "Reference");
             reference.add("$ref", refStr);
             return reference;
         }
@@ -127,8 +134,17 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
                 final JsonValue v = from.asArray().get(index);
                 return this.resolveReference(tail, v);
             } else if (from.isObject()) {
-                final JsonValue v = from.asObject().get(head);
-                return this.resolveReference(tail, v);
+                final JsonObject jo = from.asObject();
+                if (null != jo.get("$class") && Objects.equals("Set", jo.get("$class").asString())) {
+                    return this.resolveReference(path, jo.get("elements"));
+                } else if (null != jo.get("$class") && Objects.equals("List", jo.get("$class"))) {
+                    return this.resolveReference(path, jo.get("elements"));
+                } else if (null != jo.get("$class") && Objects.equals("Map", jo.get("$class"))) {
+                    throw new UnsupportedOperationException(); // TODO:
+                } else {
+                    final JsonValue v = from.asObject().get(head);
+                    return this.resolveReference(tail, v);
+                }
             } else {
                 return null;
             }
@@ -136,9 +152,19 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
     }
 
     private JsonValue resolveReference(final JsonObject referenceObject, final BinaryTransformer transformer) {
-        final List<String> path = Arrays.asList(referenceObject.get("$ref").asString().substring(2).split("/"));
-        final HJsonTransformerDefault hjt = (HJsonTransformerDefault) transformer;
-        return this.resolveReference(path, hjt.getHJsonRoot());
+        if (null != referenceObject.get("$ref")) {
+            final String pathStr = referenceObject.get("$ref").asString();
+            if (pathStr.startsWith("#/")) {
+                final String pathStr2 = pathStr.substring(2);
+                final List<String> path = pathStr2.isEmpty() ? Arrays.asList() : Arrays.asList(pathStr2.split("/"));
+                final HJsonTransformerDefault hjt = (HJsonTransformerDefault) transformer;
+                return this.resolveReference(path, hjt.getHJsonRoot());
+            } else {
+                throw new TransformException("$ref is not a valid Json Path expression: " + pathStr, null);
+            }
+        } else {
+            throw new TransformException("JsonObject is not a reference: " + referenceObject.toString(), null);
+        }
     }
 
     private boolean isDatatype(final Class<?> cls) {
@@ -166,6 +192,40 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
 
     private boolean isPropertyAccessor(final Method m) {
         return false;
+    }
+
+    private void setValueRight2Left(final Object left, final Method accessor, final JsonValue rightValue, final BinaryTransformer transformer) {
+        if (List.class.isAssignableFrom(accessor.getReturnType())) {
+            final List leftValue = transformer.transformRight2Left((Class<BinaryRule<List, JsonValue>>) (Object) List2JsonArray.class, rightValue);
+            final Method mutator = this.getMutator(accessor);
+            if (null == mutator) {
+                final List lv = RT.wrap(() -> (List) accessor.invoke(left));
+                lv.addAll(leftValue);
+            } else {
+                RT.wrap(() -> mutator.invoke(left, leftValue));
+            }
+        } else if (Set.class.isAssignableFrom(accessor.getReturnType())) {
+            final Set leftValue = transformer.transformRight2Left((Class<BinaryRule<Set, JsonValue>>) (Object) Set2JsonArray.class, rightValue);
+            final Method mutator = this.getMutator(accessor);
+            if (null == mutator) {
+                final Set lv = RT.wrap(() -> (Set) accessor.invoke(left));
+                lv.addAll(leftValue);
+            } else {
+                RT.wrap(() -> mutator.invoke(left, leftValue));
+            }
+        } else if (Map.class.isAssignableFrom(accessor.getReturnType())) {
+            final Map leftValue = transformer.transformRight2Left((Class<BinaryRule<Map, JsonObject>>) (Object) Map2JsonObject.class, rightValue.asObject());
+            final Method mutator = this.getMutator(accessor);
+            if (null == mutator) {
+                final Map lv = RT.wrap(() -> (Map) accessor.invoke(left));
+                lv.putAll(leftValue);
+            } else {
+                RT.wrap(() -> mutator.invoke(left, leftValue));
+            }
+        } else {
+            final Object leftValue = transformer.transformRight2Left((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class, rightValue);
+            RT.wrap(() -> this.getMutator(accessor).invoke(left, leftValue));
+        }
     }
 
     @Override
@@ -205,7 +265,7 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
                 if (null == refAnn) {
                     right.add(this.getMemberName(m), memberValue);
                 } else {
-                    final JsonObject reference = this.getReferenceTo(memberValue, transformer);
+                    final JsonObject reference = this.getReferenceTo(value, transformer);
                     right.add(this.getMemberName(m), reference);
                 }
             }
@@ -218,11 +278,23 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
     public Object constructRight2Left(final JsonObject right, final BinaryTransformer transformer) {
         final String className = right.getString("$class", "<Undefined>"); // should never be undefined due to isValid check
 
+        final Class<?> leftClass = RT.wrap(() -> Class.forName(className));
+
+        List<Tuple2<Integer, Method>> idMethods = new ArrayList<>();
+        for (final Method m : leftClass.getMethods()) {
+            final Identity idAnn = m.getAnnotation(Identity.class);
+            if (m.getDeclaringClass() != Object.class && null != idAnn && null != m.getDeclaringClass().getAnnotation(Datatype.class)) {
+                idMethods.add(new Tuple2<>(idAnn.value(), m));
+            }
+        }
+
+        idMethods = Seq.seq(idMethods).sorted((it) -> it.v1()).toList();
+
         final List<Class<?>> parameterTypes = new ArrayList<>();
         final List<Object> initargs = new ArrayList<>();
 
-        final Class<?> leftClass = RT.wrap(() -> Class.forName(className));
-        for (final Method m : leftClass.getMethods()) {
+        for (final Tuple2<Integer, Method> tm : idMethods) {
+            final Method m = tm.v2();
             final Identity idAnn = m.getAnnotation(Identity.class);
             if (m.getDeclaringClass() != Object.class && null != idAnn && null != m.getDeclaringClass().getAnnotation(Datatype.class)) {
                 parameterTypes.add(m.getReturnType());
@@ -232,7 +304,14 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
                     final Object v = transformer.transformRight2Left((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class, mv);
                     initargs.add(v);
                 } else {
-                    final JsonValue rv = this.resolveReference(mv.asObject(), transformer);
+                    if (null != mv) {
+                        final JsonValue rv = this.resolveReference(mv.asObject(), transformer);
+                        final Object v = transformer.transformRight2Left((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class, rv);
+                        initargs.add(v);
+                    } else {
+                        // use null value for reference
+                        initargs.add(null);
+                    }
                 }
             }
         }
@@ -282,38 +361,10 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
                 if (null != memberValue) {
                     final Reference refAnn = m.getAnnotation(Reference.class);
                     if (null == refAnn) { // not a reference
-                        if (List.class.isAssignableFrom(m.getReturnType())) {
-                            final Object value = transformer.transformRight2Left((Class<BinaryRule<List, JsonValue>>) (Object) List2JsonArray.class,
-                                    memberValue);
-                            RT.wrap(() -> this.getMutator(m).invoke(left, value));
-                        } else if (Set.class.isAssignableFrom(m.getReturnType())) {
-                            final Object value = transformer.transformRight2Left((Class<BinaryRule<Set, JsonValue>>) (Object) Set2JsonArray.class, memberValue);
-                            RT.wrap(() -> this.getMutator(m).invoke(left, value));
-                        } else if (Map.class.isAssignableFrom(m.getReturnType())) {
-                            final Object value = transformer.transformRight2Left((Class<BinaryRule<Map, JsonObject>>) (Object) Map2JsonObject.class,
-                                    memberValue.asObject());
-                            RT.wrap(() -> this.getMutator(m).invoke(left, value));
-                        } else {
-                            final Object value = transformer.transformRight2Left((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class,
-                                    memberValue);
-                            RT.wrap(() -> this.getMutator(m).invoke(left, value));
-                        }
+                        this.setValueRight2Left(left, m, memberValue, transformer);
                     } else {
                         final JsonValue rv = this.resolveReference(memberValue.asObject(), transformer);
-                        if (List.class.isAssignableFrom(m.getReturnType())) {
-                            final Object value = transformer.transformRight2Left((Class<BinaryRule<List, JsonValue>>) (Object) List2JsonArray.class, rv);
-                            RT.wrap(() -> this.getMutator(m).invoke(left, value));
-                        } else if (Set.class.isAssignableFrom(m.getReturnType())) {
-                            final Object value = transformer.transformRight2Left((Class<BinaryRule<Set, JsonValue>>) (Object) Set2JsonArray.class, rv);
-                            RT.wrap(() -> this.getMutator(m).invoke(left, value));
-                        } else if (Map.class.isAssignableFrom(m.getReturnType())) {
-                            final Object value = transformer.transformRight2Left((Class<BinaryRule<Map, JsonObject>>) (Object) Map2JsonObject.class,
-                                    rv.asObject());
-                            RT.wrap(() -> this.getMutator(m).invoke(left, value));
-                        } else {
-                            final Object value = transformer.transformRight2Left((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class, rv);
-                            RT.wrap(() -> this.getMutator(m).invoke(left, value));
-                        }
+                        this.setValueRight2Left(left, m, rv, transformer);
                     }
                 }
             }

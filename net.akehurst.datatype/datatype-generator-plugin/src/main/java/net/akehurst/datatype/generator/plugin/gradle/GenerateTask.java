@@ -154,6 +154,7 @@ public class GenerateTask extends DefaultTask {
                 .enableAllInfo()//
                 // .verbose()//
                 .enableExternalClasses() //
+                .enableAnnotationInfo() //
                 .enableSystemPackages()//
                 .whitelistPackages(classPatterns.toArray(new String[classPatterns.size()]))//
                 .scan();
@@ -180,26 +181,34 @@ public class GenerateTask extends DefaultTask {
             datatypes.add(dtModel);
             dtModel.put("name", cls.getName().substring(cls.getName().lastIndexOf(".") + 1));
             dtModel.put("fullName", cls.getName());
+            dtModel.put("isInterface", cls.isInterface());
+            dtModel.put("isAbstract", cls.isAbstract());
 
             final List<Map<String, Object>> extends_ = new ArrayList<>();
             dtModel.put("extends", extends_);
             if (null != cls.getSuperclass() && cls.getSuperclass().hasAnnotation(Datatype.class.getName())) {
-                extends_.add(this.createPropertyType(cls.getSuperclass(), new ArrayList<>()));
+                extends_.add(this.createPropertyType(cls.getSuperclass(), new ArrayList<>(), false));
+            }
+            final List<Map<String, Object>> implements_ = new ArrayList<>();
+            dtModel.put("implements", implements_);
+            for (final ClassInfo i : cls.getInterfaces()) {
+                if (i.hasAnnotation(Datatype.class.getName())) {
+                    implements_.add(this.createPropertyType(i, new ArrayList<>(), false));
+                }
             }
 
             final List<Map<String, Object>> property = new ArrayList<>();
             dtModel.put("property", property);
             for (final MethodInfo mi : cls.getMethodInfo()) {
-                if (mi.getAnnotationInfo().containsName(Reference.class.getName())) {
-                    // ignore for now!
-                } else if (mi.getAnnotationInfo().containsName(Query.class.getName())) {
+                final boolean isRef = mi.getAnnotationInfo().containsName(Reference.class.getName());
+                if (mi.getAnnotationInfo().containsName(Query.class.getName())) {
                     // ignore for now!
                 } else {
                     if (mi.getParameterInfo().length == 0 && mi.getName().startsWith("get")) {
                         final Map<String, Object> meth = new HashMap<>();
                         meth.put("name", this.createMemberName(mi.getName()));
                         final TypeSignature propertyTypeSig = mi.getTypeSignatureOrTypeDescriptor().getResultType();
-                        meth.put("type", this.createPropertyType(propertyTypeSig));
+                        meth.put("type", this.createPropertyType(propertyTypeSig, isRef));
                         property.add(meth);
                     }
                 }
@@ -229,7 +238,7 @@ public class GenerateTask extends DefaultTask {
         return methodName.substring(3, 4).toLowerCase() + methodName.substring(4);
     }
 
-    private Map<String, Object> createPropertyType(final ClassInfo ci, final List<TypeArgument> tArgs) {
+    private Map<String, Object> createPropertyType(final ClassInfo ci, final List<TypeArgument> tArgs, final boolean isRef) {
         final Map<String, Object> mType = new HashMap<>();
         final String fullName = ci.getName();
         mType.put("fullName", fullName);
@@ -237,19 +246,19 @@ public class GenerateTask extends DefaultTask {
         if (ci.implementsInterface("java.util.Collection")) {
             mType.put("isCollection", true);
             mType.put("isOrdered", Objects.equals("java.util.List", ci.getName()));
-            GenerateTask.LOGGER.error("isOrdered " + Objects.equals("java.util.List", ci.getName()));
 
-            final Map<String, Object> et = this.createPropertyType(tArgs.get(0).getTypeSignature());
+            final Map<String, Object> et = this.createPropertyType(tArgs.get(0).getTypeSignature(), false); // what is isRef here!
             GenerateTask.LOGGER.info("Collection with elementType " + tArgs.get(0).getTypeSignature());
             mType.put("elementType", et);
 
         } else if (ci.isEnum()) {
             mType.put("isEnum", true);
         }
+        mType.put("isReference", isRef);
         return mType;
     }
 
-    private Map<String, Object> createPropertyType(final TypeSignature typeSig) {
+    private Map<String, Object> createPropertyType(final TypeSignature typeSig, final boolean isRef) {
         Map<String, Object> mType = new HashMap<>();
         if (typeSig instanceof BaseTypeSignature) {
             final BaseTypeSignature bts = (BaseTypeSignature) typeSig;
@@ -260,7 +269,7 @@ public class GenerateTask extends DefaultTask {
             mType.put("name", "array");
             mType.put("fullName", "array");
             mType.put("isCollection", true);
-            mType.put("elementType", this.createPropertyType(rts.getElementTypeSignature()));
+            mType.put("elementType", this.createPropertyType(rts.getElementTypeSignature(), isRef));
         } else if (typeSig instanceof ClassRefTypeSignature) {
             final ClassRefTypeSignature cts = (ClassRefTypeSignature) typeSig;
             if (null == cts.getClassInfo()) {
@@ -269,7 +278,7 @@ public class GenerateTask extends DefaultTask {
                 mType.put("name", fullName.substring(fullName.lastIndexOf('.') + 1));
                 GenerateTask.LOGGER.error("Unable to find class info for " + cts.getFullyQualifiedClassName());
             } else {
-                mType = this.createPropertyType(cts.getClassInfo(), cts.getTypeArguments());
+                mType = this.createPropertyType(cts.getClassInfo(), cts.getTypeArguments(), isRef);
             }
         } else {
         }
