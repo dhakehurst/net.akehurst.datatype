@@ -109,13 +109,13 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
         if (null == path) {
             final JsonObject reference = new JsonObject();
             final String refStr = "<Unknown reference>";
-            reference.add("$class", "Reference");
+            reference.add("$type", "Reference");
             reference.add("$ref", refStr);
             return reference;
         } else {
             final JsonObject reference = new JsonObject();
             final String refStr = "#/" + Seq.seq(path).toString("/");
-            reference.add("$class", "Reference");
+            reference.add("$type", "Reference");
             reference.add("$ref", refStr);
             return reference;
         }
@@ -135,12 +135,17 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
                 return this.resolveReference(tail, v);
             } else if (from.isObject()) {
                 final JsonObject jo = from.asObject();
-                if (null != jo.get("$class") && Objects.equals("Set", jo.get("$class").asString())) {
-                    return this.resolveReference(path, jo.get("elements"));
-                } else if (null != jo.get("$class") && Objects.equals("List", jo.get("$class"))) {
-                    return this.resolveReference(path, jo.get("elements"));
-                } else if (null != jo.get("$class") && Objects.equals("Map", jo.get("$class"))) {
+                final String type = null == jo.get("$type") ? null : jo.get("$type").asString();
+                if (null != type && Objects.equals("Set", type)) {
+                    return this.resolveReference(path, jo.get("$elements"));
+                } else if (null != type && Objects.equals("List", type)) {
+                    return this.resolveReference(path, jo.get("$elements"));
+                } else if (null != type && Objects.equals("Map", type)) {
                     throw new UnsupportedOperationException(); // TODO:
+                } else if (null != type && Objects.equals("Enum", type)) {
+                    return null;
+                } else if (null != type && Objects.equals("Reference", type)) {
+                    return null;
                 } else {
                     final JsonValue v = from.asObject().get(head);
                     return this.resolveReference(tail, v);
@@ -160,7 +165,9 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
                 final HJsonTransformerDefault hjt = (HJsonTransformerDefault) transformer;
                 return this.resolveReference(path, hjt.getHJsonRoot());
             } else {
-                throw new TransformException("$ref is not a valid Json Path expression: " + pathStr, null);
+                // throw new TransformException("$ref is not a valid Json Path expression: " + pathStr, null);
+                // TODO: need to log a warning really!
+                return null;
             }
         } else {
             throw new TransformException("JsonObject is not a reference: " + referenceObject.toString(), null);
@@ -168,6 +175,9 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
     }
 
     private boolean isDatatype(final Class<?> cls) {
+        if (null == cls) {
+            return false;
+        }
         final Datatype ann = cls.getAnnotation(Datatype.class);
         if (null == ann) {
             // check interfaces, superclasses are included because @Datatype is marked as @Inherited
