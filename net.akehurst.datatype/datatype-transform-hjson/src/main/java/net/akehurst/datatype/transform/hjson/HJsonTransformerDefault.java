@@ -68,22 +68,22 @@ public class HJsonTransformerDefault extends BinaryTransformerBasic implements H
     }
 
     @Override
-    public JsonValue toHJson(final Object datatype) {
-        this.setJavaRoot(datatype);
+    public JsonValue toHJson(final Object root, final Object datatype) {
+        this.setJavaRoot(root);
         final JsonValue hjson = this.transformLeft2Right((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class, datatype);
         return hjson;
     }
 
     @Override
-    public <T> T toDatatype(final Class<T> class_, final JsonValue hjson) {
-        this.setHJsonRoot(hjson);
+    public <T> T toDatatype(final Class<T> class_, final JsonValue root, final JsonValue hjson) {
+        this.setHJsonRoot(root);
         final Object datatype = this.transformRight2Left((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class, hjson);
         return (T) datatype;
     }
 
     @Override
-    public <T> T toDatatype(final JsonValue hjson) {
-        this.setHJsonRoot(hjson);
+    public <T> T toDatatype(final JsonValue root, final JsonValue hjson) {
+        this.setHJsonRoot(root);
         final Object datatype = this.transformRight2Left((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class, hjson);
         return (T) datatype;
     }

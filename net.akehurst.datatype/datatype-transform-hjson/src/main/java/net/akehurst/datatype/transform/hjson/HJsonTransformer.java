@@ -20,10 +20,10 @@ import org.hjson.JsonValue;
 
 public interface HJsonTransformer {
 
-    JsonValue toHJson(Object datatype);
+    JsonValue toHJson(Object root, Object datatype);
 
-    <T> T toDatatype(JsonValue hjson);
+    <T> T toDatatype(JsonValue root, JsonValue hjson);
 
-    <T> T toDatatype(Class<T> class_, JsonValue hjson);
+    <T> T toDatatype(Class<T> class_, JsonValue root, JsonValue hjson);
 
 }

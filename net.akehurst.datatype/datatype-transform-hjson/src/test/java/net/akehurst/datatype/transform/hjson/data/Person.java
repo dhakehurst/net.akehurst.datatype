@@ -39,7 +39,7 @@ public class Person {
         this.friends = new ArrayList<>();
     }
 
-    @Identity
+    @Identity(0)
     public String getFirstname() {
         return this.firstname;
     }
@@ -48,7 +48,7 @@ public class Person {
         return this.othernames;
     }
 
-    @Identity
+    @Identity(1)
     public String getLastname() {
         return this.lastname;
     }

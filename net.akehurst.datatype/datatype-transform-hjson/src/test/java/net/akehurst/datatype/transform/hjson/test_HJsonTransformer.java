@@ -17,6 +17,7 @@
 package net.akehurst.datatype.transform.hjson;
 
 import java.util.Objects;
+import java.util.Optional;
 
 import org.hjson.JsonArray;
 import org.hjson.JsonObject;
@@ -45,7 +46,7 @@ public class test_HJsonTransformer {
 
         final Person datatype = new Person("Fred", "Blogs");
 
-        final JsonObject hjson = this.sut.toHJson(datatype).asObject();
+        final JsonObject hjson = this.sut.toHJson(datatype, datatype).asObject();
 
         Assert.assertEquals(datatype.getClass().getName(), hjson.get("$class").asString());
         Assert.assertEquals(datatype.getFirstname(), hjson.get("firstname").asString());
@@ -60,9 +61,9 @@ public class test_HJsonTransformer {
         hjson.add("firstname", "Fred");
         hjson.add("lastname", "Blogs");
 
-        final Person datatype = this.sut.toDatatype(hjson);
+        final Person datatype = this.sut.toDatatype(hjson, hjson);
 
-        Assert.assertEquals(hjson.get("_class").asString(), datatype.getClass().getName());
+        Assert.assertEquals(hjson.get("$class").asString(), datatype.getClass().getName());
         Assert.assertEquals(hjson.get("firstname").asString(), datatype.getFirstname());
         Assert.assertEquals(hjson.get("lastname").asString(), datatype.getLastname());
     }
@@ -73,13 +74,13 @@ public class test_HJsonTransformer {
         final Person datatype = new Person("Fred", "Blogs");
         datatype.getOthernames().add("Jim");
 
-        final JsonObject hjson = this.sut.toHJson(datatype).asObject();
+        final JsonObject hjson = this.sut.toHJson(datatype, datatype).asObject();
 
         Assert.assertEquals(datatype.getClass().getName(), hjson.get("$class").asString());
         Assert.assertEquals(datatype.getFirstname(), hjson.get("firstname").asString());
-        for (int i = 0; i < hjson.get("othernames").asObject().get("elements").asArray().size(); ++i) {
+        for (int i = 0; i < hjson.get("othernames").asObject().get("$elements").asArray().size(); ++i) {
             final String othername = datatype.getOthernames().get(i);
-            final String hj = hjson.get("othernames").asObject().get("elements").asArray().get(i).asString();
+            final String hj = hjson.get("othernames").asObject().get("$elements").asArray().get(i).asString();
             Assert.assertEquals(othername, hj);
         }
         Assert.assertEquals(datatype.getLastname(), hjson.get("lastname").asString());
@@ -93,19 +94,19 @@ public class test_HJsonTransformer {
         hjson.add("firstname", "Fred");
         hjson.add("lastname", "Blogs");
         final JsonObject jsonOther = new JsonObject();
-        jsonOther.add("$class", "Set");
+        jsonOther.add("$type", "List");
         final JsonArray elements = new JsonArray();
-        jsonOther.add("elements", elements);
+        jsonOther.add("$elements", elements);
         hjson.add("othernames", jsonOther);
         elements.add(JsonValue.valueOf("Jim"));
 
-        final Person datatype = this.sut.toDatatype(hjson);
+        final Person datatype = this.sut.toDatatype(hjson, hjson);
 
         Assert.assertEquals(hjson.get("$class").asString(), datatype.getClass().getName());
         Assert.assertEquals(hjson.get("firstname").asString(), datatype.getFirstname());
         for (int i = 0; i < datatype.getOthernames().size(); ++i) {
             final String othername = datatype.getOthernames().get(i);
-            final String hj = hjson.get("othernames").asArray().get(i).asString();
+            final String hj = hjson.get("othernames").asObject().get("$elements").asArray().get(i).asString();
             Assert.assertEquals(hj, othername);
         }
         Assert.assertEquals(hjson.get("lastname").asString(), datatype.getLastname());
@@ -125,14 +126,15 @@ public class test_HJsonTransformer {
         datatype.getContacts().add(c2);
         c2.setPerson(p2);
 
-        final JsonObject hjson = this.sut.toHJson(datatype).asObject();
+        final JsonObject hjson = this.sut.toHJson(datatype, datatype).asObject();
 
         System.out.println(hjson.toString(Stringify.FORMATTED));
 
         Assert.assertEquals(datatype.getClass().getName(), hjson.get("$class").asString());
-        Assert.assertEquals(p1.getFirstname(), hjson.get("contacts").asArray().get(0).asObject().get("person").asObject().get("firstname").asString());
-        Assert.assertEquals("#/contacts/1/person",
-                hjson.get("contacts").asArray().get(0).asObject().get("person").asObject().get("inRelationshipWith").asObject().get("$ref").asString());
+        Assert.assertEquals(p1.getFirstname(),
+                hjson.get("contacts").asObject().get("$elements").asArray().get(1).asObject().get("person").asObject().get("firstname").asString());
+        Assert.assertEquals("#/contacts/0/person", hjson.get("contacts").asObject().get("$elements").asArray().get(0).asObject().get("person").asObject()
+                .get("inRelationshipWith").asObject().get("$ref").asString());
     }
 
     @Test
@@ -143,6 +145,7 @@ public class test_HJsonTransformer {
         p1.add("firstname", "Fred");
         p1.add("lastname", "Blogs");
         final JsonObject ref = new JsonObject();
+        ref.add("$type", "Reference");
         ref.add("$ref", "#/contacts/1/person");
         p1.add("inRelationshipWith", ref);
         final JsonObject c1 = new JsonObject();
@@ -162,20 +165,22 @@ public class test_HJsonTransformer {
         final JsonObject hjson = new JsonObject();
         hjson.add("$class", AddressBook.class.getName());
         final JsonObject contacts = new JsonObject();
-        contacts.add("$class", "Set");
+        contacts.add("$type", "Set");
         final JsonArray elements = new JsonArray();
-        contacts.add("elements", elements);
+        contacts.add("$elements", elements);
         hjson.add("contacts", contacts);
         elements.add(c1);
         elements.add(c2);
 
-        final AddressBook datatype = this.sut.toDatatype(hjson);
+        final AddressBook datatype = this.sut.toDatatype(hjson, hjson);
 
         System.out.println(hjson.toString(Stringify.FORMATTED));
 
         Assert.assertEquals(hjson.get("$class").asString(), datatype.getClass().getName());
         Assert.assertEquals(2, datatype.getContacts().size());
-        Assert.assertEquals(p2.get("firstname").asString(), Seq.seq(datatype.getContacts()).findFirst(c -> Objects.equals("Fred", c.getPerson().getFirstname()))
-                .get().getPerson().getInRelationshipWith().getFirstname());
+        final Optional<Contact> fred = Seq.seq(datatype.getContacts()).findFirst(c -> {
+            return Objects.equals("Fred", c.getPerson().getFirstname());
+        });
+        Assert.assertEquals(p2.get("firstname").asString(), fred.get().getPerson().getInRelationshipWith().getFirstname());
     }
 }

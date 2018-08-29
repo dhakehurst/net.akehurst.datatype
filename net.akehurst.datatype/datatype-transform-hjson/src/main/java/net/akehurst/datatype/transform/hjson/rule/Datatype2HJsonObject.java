@@ -21,6 +21,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -81,18 +82,13 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
                     ++i;
                 }
                 return null;
-            } else if (null != from.getClass().getAnnotation(Datatype.class)) { // treat from as an Object
-                for (final Method m : from.getClass().getMethods()) {
-                    final Query queryAnn = m.getAnnotation(Query.class);
-                    final Reference refAnn = m.getAnnotation(Reference.class);
-                    if (m.getDeclaringClass() != Object.class && null == queryAnn && null == refAnn && 0 == m.getParameters().length
-                            && m.getName().startsWith("get")) {
-                        final Object value = RT.wrap(() -> m.invoke(from));
-                        final List<String> path = this.createPath(value, to);
-                        if (null != path) {
-                            path.add(0, this.getMemberName(m));
-                            return path;
-                        }
+            } else if (this.isDatatype(from.getClass())) { // treat from as an Object
+                for (final Method m : this.getNavigableMethods(from.getClass())) {
+                    final Object value = RT.wrap(() -> m.invoke(from));
+                    final List<String> path = this.createPath(value, to);
+                    if (null != path) {
+                        path.add(0, this.getMemberName(m));
+                        return path;
                     }
                 }
                 return null;
@@ -193,15 +189,91 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
         }
     }
 
+    private boolean isNavigableAccessor(final Method m) {
+        boolean res = true;
+        res &= null != m.getDeclaringClass().getDeclaredAnnotation(Datatype.class);
+        res &= null == m.getDeclaredAnnotation(Query.class);
+        res &= null == m.getDeclaredAnnotation(Reference.class);
+        res &= 0 == m.getParameters().length; // TODO: may need to change this '&& 0==m.getParameters().length' to support getters with args for e.g. maps!
+        res &= m.getName().startsWith("get");
+        return res;
+    }
+
     private boolean isIdentityAccessor(final Method m) {
         boolean res = true;
-        res &= null != m.getDeclaringClass().getAnnotation(Datatype.class);
-        res &= null != m.getAnnotation(Identity.class);
+        res &= null != m.getDeclaringClass().getDeclaredAnnotation(Datatype.class);
+        res &= null != m.getDeclaredAnnotation(Identity.class);
         return res;
     }
 
     private boolean isPropertyAccessor(final Method m) {
-        return false;
+        boolean res = true;
+        res &= null != m.getDeclaringClass().getDeclaredAnnotation(Datatype.class);
+        res &= null == m.getDeclaredAnnotation(Identity.class);
+        res &= null == m.getDeclaredAnnotation(Query.class);
+        res &= 0 == m.getParameters().length; // TODO: may need to change this '&& 0==m.getParameters().length' to support getters with args for e.g. maps!
+        res &= m.getName().startsWith("get");
+        return res;
+    }
+
+    private Set<Method> getNavigableMethods(final Class<?> cls) {
+        if (null == cls) {
+            return new HashSet<>();
+        } else {
+            final Set<Method> result = new HashSet<>();
+            final Set<Method> superclassMethods = this.getNavigableMethods(cls.getSuperclass());
+            result.addAll(superclassMethods);
+            for (final Class<?> intf : cls.getInterfaces()) {
+                final Set<Method> interfaceMethods = this.getNavigableMethods(intf);
+                result.addAll(interfaceMethods);
+            }
+            for (final Method m : cls.getDeclaredMethods()) {
+                if (this.isNavigableAccessor(m)) {
+                    result.add(m);
+                }
+            }
+            return result;
+        }
+    }
+
+    private Set<Method> getIdentityMethods(final Class<?> cls) {
+        if (null == cls) {
+            return new HashSet<>();
+        } else {
+            final Set<Method> result = new HashSet<>();
+            final Set<Method> superclassMethods = this.getIdentityMethods(cls.getSuperclass());
+            result.addAll(superclassMethods);
+            for (final Class<?> intf : cls.getInterfaces()) {
+                final Set<Method> interfaceMethods = this.getIdentityMethods(intf);
+                result.addAll(interfaceMethods);
+            }
+            for (final Method m : cls.getDeclaredMethods()) {
+                if (this.isIdentityAccessor(m)) {
+                    result.add(m);
+                }
+            }
+            return result;
+        }
+    }
+
+    private Set<Method> getPropertyMethods(final Class<?> cls) {
+        if (null == cls) {
+            return new HashSet<>();
+        } else {
+            final Set<Method> result = new HashSet<>();
+            final Set<Method> superclassMethods = this.getPropertyMethods(cls.getSuperclass());
+            result.addAll(superclassMethods);
+            for (final Class<?> intf : cls.getInterfaces()) {
+                final Set<Method> interfaceMethods = this.getPropertyMethods(intf);
+                result.addAll(interfaceMethods);
+            }
+            for (final Method m : cls.getDeclaredMethods()) {
+                if (this.isPropertyAccessor(m)) {
+                    result.add(m);
+                }
+            }
+            return result;
+        }
     }
 
     private void setValueRight2Left(final Object left, final Method accessor, final JsonValue rightValue, final BinaryTransformer transformer) {
@@ -266,18 +338,15 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
         final JsonObject right = new JsonObject();
         right.add("$class", left.getClass().getName());
 
-        for (final Method m : left.getClass().getMethods()) {
-            final Identity idAnn = m.getAnnotation(Identity.class);
-            if (null != idAnn) {
-                final Object value = RT.wrap(() -> m.invoke(left));
-                final JsonValue memberValue = transformer.transformLeft2Right((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class, value);
-                final Reference refAnn = m.getAnnotation(Reference.class);
-                if (null == refAnn) {
-                    right.add(this.getMemberName(m), memberValue);
-                } else {
-                    final JsonObject reference = this.getReferenceTo(value, transformer);
-                    right.add(this.getMemberName(m), reference);
-                }
+        for (final Method m : this.getIdentityMethods(left.getClass())) {
+            final Object value = RT.wrap(() -> m.invoke(left));
+            final JsonValue memberValue = transformer.transformLeft2Right((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class, value);
+            final Reference refAnn = m.getAnnotation(Reference.class);
+            if (null == refAnn) {
+                right.add(this.getMemberName(m), memberValue);
+            } else {
+                final JsonObject reference = this.getReferenceTo(value, transformer);
+                right.add(this.getMemberName(m), reference);
             }
         }
 
@@ -291,11 +360,9 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
         final Class<?> leftClass = RT.wrap(() -> Class.forName(className));
 
         List<Tuple2<Integer, Method>> idMethods = new ArrayList<>();
-        for (final Method m : leftClass.getMethods()) {
+        for (final Method m : this.getIdentityMethods(leftClass)) {
             final Identity idAnn = m.getAnnotation(Identity.class);
-            if (m.getDeclaringClass() != Object.class && null != idAnn && null != m.getDeclaringClass().getAnnotation(Datatype.class)) {
-                idMethods.add(new Tuple2<>(idAnn.value(), m));
-            }
+            idMethods.add(new Tuple2<>(idAnn.value(), m));
         }
 
         idMethods = Seq.seq(idMethods).sorted((it) -> it.v1()).toList();
@@ -305,23 +372,20 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
 
         for (final Tuple2<Integer, Method> tm : idMethods) {
             final Method m = tm.v2();
-            final Identity idAnn = m.getAnnotation(Identity.class);
-            if (m.getDeclaringClass() != Object.class && null != idAnn && null != m.getDeclaringClass().getAnnotation(Datatype.class)) {
-                parameterTypes.add(m.getReturnType());
-                final JsonValue mv = right.get(this.getMemberName(m));
-                final Reference refAnn = m.getAnnotation(Reference.class);
-                if (null == refAnn) { // not a reference
-                    final Object v = transformer.transformRight2Left((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class, mv);
+            parameterTypes.add(m.getReturnType());
+            final JsonValue mv = right.get(this.getMemberName(m));
+            final Reference refAnn = m.getAnnotation(Reference.class);
+            if (null == refAnn) { // not a reference
+                final Object v = transformer.transformRight2Left((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class, mv);
+                initargs.add(v);
+            } else {
+                if (null != mv) {
+                    final JsonValue rv = this.resolveReference(mv.asObject(), transformer);
+                    final Object v = transformer.transformRight2Left((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class, rv);
                     initargs.add(v);
                 } else {
-                    if (null != mv) {
-                        final JsonValue rv = this.resolveReference(mv.asObject(), transformer);
-                        final Object v = transformer.transformRight2Left((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class, rv);
-                        initargs.add(v);
-                    } else {
-                        // use null value for reference
-                        initargs.add(null);
-                    }
+                    // use null value for reference
+                    initargs.add(null);
                 }
             }
         }
@@ -336,24 +400,22 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
 
     @Override
     public void updateLeft2Right(final Object left, final JsonObject right, final BinaryTransformer transformer) {
-        for (final Method m : left.getClass().getMethods()) {
-            final Query queryAnn = m.getAnnotation(Query.class);
-            final Identity idAnn = m.getAnnotation(Identity.class);
-            // TODO: may need to change this '&& 0==m.getParameters().length' to support getters with args for e.g. maps!
-            if (m.getDeclaringClass() != Object.class && null != m.getDeclaringClass().getAnnotation(Datatype.class) && null == queryAnn && null == idAnn
-                    && 0 == m.getParameters().length && m.getName().startsWith("get")) {
-                final String memberName = this.getMemberName(m);
-                final Object value = RT.wrap(() -> m.invoke(left));
-                if (null != value) {
-                    final Reference refAnn = m.getAnnotation(Reference.class);
-                    if (null == refAnn) {
-                        final JsonValue memberValue = transformer.transformLeft2Right((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class,
-                                value);
-                        right.add(this.getMemberName(m), memberValue);
-                    } else {
-                        final JsonObject reference = this.getReferenceTo(value, transformer);
-                        right.add(this.getMemberName(m), reference);
-                    }
+        for (final Method m : this.getPropertyMethods(left.getClass())) {
+            final String memberName = this.getMemberName(m);
+            final Object value = RT.wrap(() -> m.invoke(left));
+            boolean includeIt = null != value;
+            if (value instanceof Collection && ((Collection) value).isEmpty()) {
+                includeIt = false;
+            }
+            if (includeIt) {
+                final Reference refAnn = m.getAnnotation(Reference.class);
+                if (null == refAnn) {
+                    final JsonValue memberValue = transformer.transformLeft2Right((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class,
+                            value);
+                    right.add(this.getMemberName(m), memberValue);
+                } else {
+                    final JsonObject reference = this.getReferenceTo(value, transformer);
+                    right.add(this.getMemberName(m), reference);
                 }
             }
         }
@@ -361,25 +423,19 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
 
     @Override
     public void updateRight2Left(final Object left, final JsonObject right, final BinaryTransformer transformer) {
-        for (final Method m : left.getClass().getMethods()) {
-            final Query queryAnn = m.getAnnotation(Query.class);
-            final Identity idAnn = m.getAnnotation(Identity.class);
-            if (null == queryAnn && null == idAnn && null != m.getDeclaringClass().getAnnotation(Datatype.class) && 0 == m.getParameters().length
-                    && m.getName().startsWith("get")) {
-                final String memberName = this.getMemberName(m);
-                final JsonValue memberValue = right.get(memberName);
-                if (null != memberValue) {
-                    final Reference refAnn = m.getAnnotation(Reference.class);
-                    if (null == refAnn) { // not a reference
-                        this.setValueRight2Left(left, m, memberValue, transformer);
-                    } else {
-                        final JsonValue rv = this.resolveReference(memberValue.asObject(), transformer);
-                        this.setValueRight2Left(left, m, rv, transformer);
-                    }
+        for (final Method m : this.getPropertyMethods(left.getClass())) {
+            final String memberName = this.getMemberName(m);
+            final JsonValue memberValue = right.get(memberName);
+            if (null != memberValue) {
+                final Reference refAnn = m.getAnnotation(Reference.class);
+                if (null == refAnn) { // not a reference
+                    this.setValueRight2Left(left, m, memberValue, transformer);
+                } else {
+                    final JsonValue rv = this.resolveReference(memberValue.asObject(), transformer);
+                    this.setValueRight2Left(left, m, rv, transformer);
                 }
             }
         }
-
     }
 
 }
