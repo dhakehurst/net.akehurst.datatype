@@ -88,4 +88,10 @@ public class HJsonTransformerDefault extends BinaryTransformerBasic implements H
         return (T) datatype;
     }
 
+    @Override
+    public <T> void updateDatatype(final T datatype, final JsonValue root, final JsonValue hjson) {
+        this.setHJsonRoot(root);
+        this.updateRight2Left((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class, datatype, hjson);
+    }
+
 }

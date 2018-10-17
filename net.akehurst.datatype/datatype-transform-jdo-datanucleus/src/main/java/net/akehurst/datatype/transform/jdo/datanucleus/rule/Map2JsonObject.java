@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.akehurst.datatype.transform.hjson.rule;
+package net.akehurst.datatype.transform.jdo.datanucleus.rule;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -63,9 +63,9 @@ public class Map2JsonObject extends Object2JsonValue<Map<Object, Object>, JsonOb
         for (final Map.Entry<Object, Object> me : left.entrySet()) {
             final JsonValue jk = transformer.transformLeft2Right((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class, me.getKey());
             final JsonValue jv = transformer.transformLeft2Right((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class, me.getValue());
-            final JsonObject entry = new JsonObject();
-            entry.add("key", jk);
-            entry.add("value", jv);
+            final JsonArray entry = new JsonArray();
+            entry.add(jk);
+            entry.add(jv);
             elements.add(entry);
         }
 
@@ -73,12 +73,7 @@ public class Map2JsonObject extends Object2JsonValue<Map<Object, Object>, JsonOb
 
     @Override
     public void updateRight2Left(final Map<Object, Object> left, final JsonObject right, final BinaryTransformer transformer) {
-        for (final JsonValue je : right.get("$elements").asArray()) {
-            final JsonObject me = je.asObject();
-            final Object k = transformer.transformRight2Left((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class, me.get("key"));
-            final Object v = transformer.transformRight2Left((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class, me.get("value"));
-            left.put(k, v);
-        }
+
     }
 
 }

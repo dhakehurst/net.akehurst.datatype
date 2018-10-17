@@ -1,0 +1,19 @@
+
+ext {
+    version_jdo = '5.2.0-m1'
+    version_javax_jdo = '3.2.0-m9'
+}
+
+dependencies {
+    
+    api project(":datatype-api")
+    api "org.datanucleus:javax.jdo:${version_javax_jdo}"
+    api "org.jooq:jool-java-8:0.9.14"
+    
+    implementation project(":datatype-common")
+    implementation "org.datanucleus:datanucleus-api-jdo:${version_jdo}"
+    implementation "org.datanucleus:datanucleus-core:${version_jdo}"
+    implementation "net.akehurst.transform:binary:2.2.0"
+    
+    testImplementation "junit:junit:4.12"
+}

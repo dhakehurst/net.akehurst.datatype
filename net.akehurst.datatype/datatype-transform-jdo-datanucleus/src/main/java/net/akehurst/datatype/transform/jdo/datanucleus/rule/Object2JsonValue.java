@@ -14,17 +14,12 @@
  * limitations under the License.
  */
 
-package net.akehurst.datatype.transform.hjson;
+package net.akehurst.datatype.transform.jdo.datanucleus.rule;
 
 import org.hjson.JsonValue;
 
-public interface HJsonTransformer {
+import net.akehurst.transform.binary.api.BinaryRule;
 
-    JsonValue toHJson(Object root, Object datatype);
+public abstract class Object2JsonValue<L extends Object, R extends JsonValue> implements BinaryRule<L, R> {
 
-    <T> T toDatatype(JsonValue root, JsonValue hjson);
-
-    <T> T toDatatype(Class<T> class_, JsonValue root, JsonValue hjson);
-
-    <T> void updateDatatype(T datatype, final JsonValue root, final JsonValue hjson);
 }
