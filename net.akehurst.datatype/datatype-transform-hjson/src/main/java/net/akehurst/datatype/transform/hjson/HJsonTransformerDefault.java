@@ -26,9 +26,11 @@ import net.akehurst.datatype.transform.hjson.rule.Integer2JsonValue;
 import net.akehurst.datatype.transform.hjson.rule.List2JsonArray;
 import net.akehurst.datatype.transform.hjson.rule.Long2JsonValue;
 import net.akehurst.datatype.transform.hjson.rule.Map2JsonObject;
+import net.akehurst.datatype.transform.hjson.rule.Null2JsonValue;
 import net.akehurst.datatype.transform.hjson.rule.Object2JsonValue;
 import net.akehurst.datatype.transform.hjson.rule.Set2JsonArray;
 import net.akehurst.datatype.transform.hjson.rule.String2JsonValue;
+import net.akehurst.datatype.transform.hjson.rule.Uri2JsonValue;
 import net.akehurst.transform.binary.api.BinaryRule;
 import net.akehurst.transform.binary.basic.BinaryTransformerBasic;
 
@@ -45,10 +47,12 @@ public class HJsonTransformerDefault extends BinaryTransformerBasic implements H
         super.registerRule(Boolean2JsonValue.class);
         super.registerRule(Enum2JsonValue.class);
         super.registerRule(Instant2JsonValue.class);
+        super.registerRule(Uri2JsonValue.class);
         super.registerRule(List2JsonArray.class);
         super.registerRule(Set2JsonArray.class);
         super.registerRule(Map2JsonObject.class);
         super.registerRule(Datatype2HJsonObject.class);
+        super.registerRule(Null2JsonValue.class);
     }
 
     public JsonValue getHJsonRoot() {
