@@ -67,7 +67,7 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
     private List<String> createPath(final Object from, final Object to) {
         if (null == from) {
             return null;
-        } else if (from == to) {
+        } else if (Objects.equals(from,to)) {
             return new ArrayList<>();
         } else {
             if (from instanceof Collection<?>) {
