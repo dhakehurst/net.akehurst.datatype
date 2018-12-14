@@ -1,5 +1,6 @@
 dependencies {
 	
 	api project(":datatype-api")
+    api "org.hjson:hjson:3.0.0"
 	
 }

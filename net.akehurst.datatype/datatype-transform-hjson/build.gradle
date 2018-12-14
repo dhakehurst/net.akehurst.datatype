@@ -1,6 +1,7 @@
 dependencies {
     
     api project(":datatype-api")
+    api project(":datatype-common")
     api "org.hjson:hjson:3.0.0"
     api "org.jooq:jool-java-8:0.9.14"
     
