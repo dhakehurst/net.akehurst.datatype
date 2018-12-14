@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import net.akehurst.datatype.annotation.Datatype;
 import net.akehurst.datatype.annotation.Identity;
 import net.akehurst.datatype.annotation.Query;
 import net.akehurst.datatype.annotation.Reference;
@@ -124,7 +123,7 @@ public class DatatypeProperty {
 
 	private boolean calcIsIdentity(final Method accessor) {
 		boolean res = true;
-		res &= null != accessor.getDeclaringClass().getDeclaredAnnotation(Datatype.class);
+		// res &= null != accessor.getDeclaringClass().getDeclaredAnnotation(Datatype.class);
 		res &= null != accessor.getDeclaredAnnotation(Identity.class);
 		res &= 0 == accessor.getParameters().length; // TODO: may need to change this '&& 0==m.getParameters().length' to support getters with args for
 														// e.g. maps!
@@ -134,7 +133,7 @@ public class DatatypeProperty {
 
 	private boolean calcIsReference(final Method accessor) {
 		boolean res = true;
-		res &= null != accessor.getDeclaringClass().getDeclaredAnnotation(Datatype.class);
+		// res &= null != accessor.getDeclaringClass().getDeclaredAnnotation(Datatype.class);
 		res &= null != accessor.getDeclaredAnnotation(Reference.class);
 		res &= 0 == accessor.getParameters().length; // TODO: may need to change this '&& 0==m.getParameters().length' to support getters with args for
 														// e.g. maps!
@@ -144,7 +143,7 @@ public class DatatypeProperty {
 
 	private boolean calcIsComposite(final Method accessor) {
 		boolean res = true;
-		res &= null != accessor.getDeclaringClass().getDeclaredAnnotation(Datatype.class);
+		// res &= null != accessor.getDeclaringClass().getDeclaredAnnotation(Datatype.class);
 		res &= null == accessor.getDeclaredAnnotation(Identity.class);
 		res &= null == accessor.getDeclaredAnnotation(Query.class);
 		res &= null == accessor.getDeclaredAnnotation(Reference.class);
@@ -171,6 +170,11 @@ public class DatatypeProperty {
 		} catch (NoSuchMethodException | SecurityException e) {
 			return null;
 		}
+	}
+
+	@Override
+	public String toString() {
+		return this.accessor.getDeclaringClass().getSimpleName() + "." + this.name + " : " + this.getType().getSimpleName();
 	}
 
 }

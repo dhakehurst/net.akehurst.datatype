@@ -16,6 +16,8 @@
 
 package net.akehurst.datatype.transform.hjson;
 
+import java.io.InputStream;
+
 import org.hjson.JsonValue;
 
 import net.akehurst.datatype.common.model.DatatypeRegistry;
@@ -39,16 +41,16 @@ public class HJsonTransformerDefault extends BinaryTransformerBasic implements H
 
 	private Object javaRoot;
 	private JsonValue hjsonRoot;
-	private final DatatypeRegistry registry;
+	public static DatatypeRegistry registry; // TODO: should not use static or public here
 
 	public HJsonTransformerDefault() {
 		this(null);
 	}
 
-	public HJsonTransformerDefault(final String absoluteResourcePathToDatatypeFile) {
-		this.registry = new DatatypeRegistry();
-		if (null != absoluteResourcePathToDatatypeFile) {
-			this.registry.registerFromResource(absoluteResourcePathToDatatypeFile);
+	public HJsonTransformerDefault(final InputStream datatypeDefinitionResource) {
+		HJsonTransformerDefault.registry = new DatatypeRegistry();
+		if (null != datatypeDefinitionResource) {
+			HJsonTransformerDefault.registry.registerFromResource(datatypeDefinitionResource);
 		}
 		super.registerRule((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class);
 		super.registerRule(String2JsonValue.class);
@@ -66,7 +68,7 @@ public class HJsonTransformerDefault extends BinaryTransformerBasic implements H
 	}
 
 	public DatatypeRegistry getDatatypeRegistry() {
-		return this.registry;
+		return HJsonTransformerDefault.registry;
 	}
 
 	public JsonValue getHJsonRoot() {

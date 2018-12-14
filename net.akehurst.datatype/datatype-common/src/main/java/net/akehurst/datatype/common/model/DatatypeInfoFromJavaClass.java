@@ -45,14 +45,16 @@ public class DatatypeInfoFromJavaClass extends DatatypeInfoFromAbstract implemen
 			} else {
 				// TODO: handle overriden methods, i.e. don't include twice
 				this.property_cache = new HashSet<>();
-				final Set<DatatypeProperty> superclassMethods = this.registry.getDatatypeInfo(this.class_.getSuperclass()).getProperty();
-				this.property_cache.addAll(superclassMethods);
+				if (null != this.class_.getSuperclass()) {
+					final Set<DatatypeProperty> superclassMethods = this.registry.getDatatypeInfo(this.class_.getSuperclass()).getProperty();
+					this.property_cache.addAll(superclassMethods);
+				}
 				for (final Class<?> intf : this.class_.getInterfaces()) {
 					final Set<DatatypeProperty> interfaceMethods = this.registry.getDatatypeInfo(intf).getProperty();
 					this.property_cache.addAll(interfaceMethods);
 				}
 				for (final Method m : this.class_.getDeclaredMethods()) {
-					if (DatatypeRegistry.isProperty(m)) {
+					if (this.registry.isProperty(m)) {
 						final DatatypeProperty dp = new DatatypeProperty(m);
 						this.property_cache.add(dp);
 					}

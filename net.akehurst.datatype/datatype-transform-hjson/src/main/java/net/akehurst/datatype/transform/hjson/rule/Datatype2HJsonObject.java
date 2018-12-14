@@ -31,6 +31,7 @@ import org.hjson.JsonValue;
 import org.jooq.lambda.Seq;
 import org.jooq.lambda.tuple.Tuple2;
 
+import net.akehurst.datatype.api.DatatypeException;
 import net.akehurst.datatype.common.model.DatatypeInfo;
 import net.akehurst.datatype.common.model.DatatypeProperty;
 import net.akehurst.datatype.common.model.DatatypeRegistry;
@@ -50,20 +51,6 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
 	// should get set in ... before it is used
 	private DatatypeRegistry registry;
 
-	// private String getMemberName(final Method accessor) {
-	// return accessor.getName().substring(3, 4).toLowerCase() + accessor.getName().substring(4);
-	// }
-	//
-	// private Method getMutator(final Method accessor) {
-	// final String muName = "set" + accessor.getName().substring(3);
-	// final Class<?> type = accessor.getReturnType();
-	// try {
-	// return accessor.getDeclaringClass().getMethod(muName, type);
-	// } catch (NoSuchMethodException | SecurityException e) {
-	// return null;
-	// }
-	// }
-
 	private List<String> createPath(final Object from, final Object to) {
 		if (null == from) {
 			return null;
@@ -82,14 +69,16 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
 					++i;
 				}
 				return null;
-			} else if (DatatypeRegistry.isDatatype(from.getClass())) { // treat from as an Object
+			} else if (this.registry.isDatatype(from.getClass())) { // treat from as an Object
 				final DatatypeInfo datatype = this.registry.getDatatypeInfo(from.getClass());
 				for (final DatatypeProperty pi : datatype.getPropertyComposite()) {
-					final Object value = pi.getValueFrom(from);
-					final List<String> path = this.createPath(value, to);
-					if (null != path) {
-						path.add(0, pi.getName());
-						return path;
+					if (!pi.isReference()) {
+						final Object value = pi.getValueFrom(from);
+						final List<String> path = this.createPath(value, to);
+						if (null != path) {
+							path.add(0, pi.getName());
+							return path;
+						}
 					}
 				}
 				return null;
@@ -100,21 +89,27 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
 	}
 
 	private JsonObject getReferenceTo(final Object referedToObject, final BinaryTransformer transformer) {
+		if (null == referedToObject) {
+			return null;
+		}
 		final HJsonTransformerDefault hjt = (HJsonTransformerDefault) transformer;
-
-		final List<String> path = this.createPath(hjt.getJavaRoot(), referedToObject);
-		if (null == path) {
-			final JsonObject reference = new JsonObject();
-			final String refStr = "<Unknown reference>";
-			reference.add("$type", "Reference");
-			reference.add("$ref", refStr);
-			return reference;
-		} else {
-			final JsonObject reference = new JsonObject();
-			final String refStr = "#/" + Seq.seq(path).toString("/");
-			reference.add("$type", "Reference");
-			reference.add("$ref", refStr);
-			return reference;
+		try {
+			final List<String> path = this.createPath(hjt.getJavaRoot(), referedToObject);
+			if (null == path) {
+				final JsonObject reference = new JsonObject();
+				final String refStr = "<Unknown reference>";
+				reference.add("$type", "Reference");
+				reference.add("$ref", refStr);
+				return reference;
+			} else {
+				final JsonObject reference = new JsonObject();
+				final String refStr = "#/" + Seq.seq(path).toString("/");
+				reference.add("$type", "Reference");
+				reference.add("$ref", refStr);
+				return reference;
+			}
+		} catch (final StackOverflowError e) {
+			throw new DatatypeException("Did you forget to mark something as a reference? Error creating reference to " + referedToObject, e);
 		}
 	}
 
@@ -171,112 +166,6 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
 		}
 	}
 
-	// private boolean isDatatype(final Class<?> cls) {
-	// if (null == cls) {
-	// return false;
-	// }
-	// final Datatype ann = cls.getAnnotation(Datatype.class);
-	// if (null == ann) {
-	// // check interfaces, superclasses are included because @Datatype is marked as @Inherited
-	// for (final Class<?> intf : cls.getInterfaces()) {
-	// if (this.isDatatype(intf)) {
-	// return true;
-	// }
-	// }
-	// // check interfaces of superclass
-	// return this.isDatatype(cls.getSuperclass());
-	// } else {
-	// return true;
-	// }
-	// }
-
-	// private boolean isNavigableAccessor(final Method m) {
-	// boolean res = true;
-	// res &= null != m.getDeclaringClass().getDeclaredAnnotation(Datatype.class);
-	// res &= null == m.getDeclaredAnnotation(Query.class);
-	// res &= null == m.getDeclaredAnnotation(Reference.class);
-	// res &= 0 == m.getParameters().length; // TODO: may need to change this '&& 0==m.getParameters().length' to support getters with args for e.g. maps!
-	// res &= m.getName().startsWith("get");
-	// return res;
-	// }
-
-	// private boolean isIdentityAccessor(final Method m) {
-	// boolean res = true;
-	// res &= null != m.getDeclaringClass().getDeclaredAnnotation(Datatype.class);
-	// res &= null != m.getDeclaredAnnotation(Identity.class);
-	// return res;
-	// }
-
-	// private boolean isPropertyAccessor(final Method m) {
-	// boolean res = true;
-	// res &= null != m.getDeclaringClass().getDeclaredAnnotation(Datatype.class);
-	// res &= null == m.getDeclaredAnnotation(Identity.class);
-	// res &= null == m.getDeclaredAnnotation(Query.class);
-	// res &= 0 == m.getParameters().length; // TODO: may need to change this '&& 0==m.getParameters().length' to support getters with args for e.g. maps!
-	// res &= m.getName().startsWith("get");
-	// return res;
-	// }
-
-	// private Set<Method> getNavigableMethods(final Class<?> cls) {
-	// if (null == cls) {
-	// return new HashSet<>();
-	// } else {
-	// final Set<Method> result = new HashSet<>();
-	// final Set<Method> superclassMethods = this.getNavigableMethods(cls.getSuperclass());
-	// result.addAll(superclassMethods);
-	// for (final Class<?> intf : cls.getInterfaces()) {
-	// final Set<Method> interfaceMethods = this.getNavigableMethods(intf);
-	// result.addAll(interfaceMethods);
-	// }
-	// for (final Method m : cls.getDeclaredMethods()) {
-	// if (this.isNavigableAccessor(m)) {
-	// result.add(m);
-	// }
-	// }
-	// return result;
-	// }
-	// }
-
-	// private Set<Method> getIdentityMethods(final Class<?> cls) {
-	// if (null == cls) {
-	// return new HashSet<>();
-	// } else {
-	// final Set<Method> result = new HashSet<>();
-	// final Set<Method> superclassMethods = this.getIdentityMethods(cls.getSuperclass());
-	// result.addAll(superclassMethods);
-	// for (final Class<?> intf : cls.getInterfaces()) {
-	// final Set<Method> interfaceMethods = this.getIdentityMethods(intf);
-	// result.addAll(interfaceMethods);
-	// }
-	// for (final Method m : cls.getDeclaredMethods()) {
-	// if (this.isIdentityAccessor(m)) {
-	// result.add(m);
-	// }
-	// }
-	// return result;
-	// }
-	// }
-
-	// private Set<Method> getPropertyMethods(final Class<?> cls) {
-	// if (null == cls) {
-	// return new HashSet<>();
-	// } else {
-	// final Set<Method> result = new HashSet<>();
-	// final Set<Method> superclassMethods = this.getPropertyMethods(cls.getSuperclass());
-	// result.addAll(superclassMethods);
-	// for (final Class<?> intf : cls.getInterfaces()) {
-	// final Set<Method> interfaceMethods = this.getPropertyMethods(intf);
-	// result.addAll(interfaceMethods);
-	// }
-	// for (final Method m : cls.getDeclaredMethods()) {
-	// if (this.isPropertyAccessor(m)) {
-	// result.add(m);
-	// }
-	// }
-	// return result;
-	// }
-	// }
-
 	private void setValueRight2Left(final Object left, final DatatypeProperty pi, final JsonValue rightValue, final BinaryTransformer transformer) {
 		if (List.class.isAssignableFrom(pi.getType())) {
 			final List leftValue = transformer.transformRight2Left((Class<BinaryRule<List, JsonValue>>) (Object) List2JsonArray.class, rightValue);
@@ -308,7 +197,8 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
 		if (null == left) {
 			return false;
 		}
-		return DatatypeRegistry.isDatatype(left.getClass());
+		// TODO: should not use static thig here!
+		return HJsonTransformerDefault.registry.isDatatype(left.getClass());
 	}
 
 	@Override
@@ -338,7 +228,9 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
 			final JsonValue memberValue = transformer.transformLeft2Right((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class, value);
 			if (pi.isReference()) {
 				final JsonObject reference = this.getReferenceTo(value, transformer);
-				right.add(pi.getName(), reference);
+				if (null != reference) {
+					right.add(pi.getName(), reference);
+				}
 			} else {
 				right.add(pi.getName(), memberValue);
 			}
@@ -395,13 +287,17 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
 				includeIt = false;
 			}
 			if (includeIt) {
-				if (!pi.isReference()) {
+				if (pi.isComposite()) {
 					final JsonValue memberValue = transformer.transformLeft2Right((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class,
 							value);
 					right.add(pi.getName(), memberValue);
-				} else {
+				} else if (pi.isReference()) {
 					final JsonObject reference = this.getReferenceTo(value, transformer);
-					right.add(pi.getName(), reference);
+					if (null != reference) {
+						right.add(pi.getName(), reference);
+					}
+				} else {
+					// do nothing
 				}
 			}
 		}
@@ -417,11 +313,13 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
 			} else {
 				final JsonValue memberValue = right.get(pi.getName());
 				if (null != memberValue) {
-					if (!pi.isReference()) { // not a reference
+					if (pi.isComposite()) {
 						this.setValueRight2Left(left, pi, memberValue, transformer);
-					} else {
+					} else if (pi.isReference()) {
 						final JsonValue rv = this.resolveReference(memberValue.asObject(), transformer);
 						this.setValueRight2Left(left, pi, rv, transformer);
+					} else {
+						// do nothing
 					}
 				}
 			}

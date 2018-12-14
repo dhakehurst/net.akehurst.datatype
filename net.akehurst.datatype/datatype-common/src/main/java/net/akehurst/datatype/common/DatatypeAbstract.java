@@ -21,57 +21,61 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import net.akehurst.datatype.annotation.Query;
+
 /**
  * A common base class for datatypes that can be identified by a few constructor arguments.
  *
- * <p>The identityValues passed as arguments should never change, and are ideally primitive types.
+ * <p>
+ * The identityValues passed as arguments should never change, and are ideally primitive types.
  *
  */
 public abstract class DatatypeAbstract {
 
-    public DatatypeAbstract(final Object... identityValues) {
-        this.identityValues = identityValues;
-        this.hashCode_cache = Objects.hash(this.identityValues);
-    }
+	public DatatypeAbstract(final Object... identityValues) {
+		this.identityValues = identityValues;
+		this.hashCode_cache = Objects.hash(this.identityValues);
+	}
 
-    private final Object[] identityValues;
+	private final Object[] identityValues;
 
-    protected List<Object> getIdentityValues() {
-        return Collections.unmodifiableList(Arrays.asList(this.identityValues));
-    }
+	@Query
+	protected List<Object> getIdentityValues() {
+		return Collections.unmodifiableList(Arrays.asList(this.identityValues));
+	}
 
-    int hashCode_cache;
+	int hashCode_cache;
 
-    @Override
-    public int hashCode() {
-        return this.hashCode_cache;
-    }
+	@Override
+	public int hashCode() {
+		return this.hashCode_cache;
+	}
 
-    @Override
-    public boolean equals(final Object obj) {
-        if (this.getClass().isInstance(obj)) {
-            final DatatypeAbstract other = (DatatypeAbstract) obj;
-            return Arrays.equals(this.identityValues, other.identityValues);
-        } else {
-            return false;
-        }
-    }
+	@Override
+	public boolean equals(final Object obj) {
+		if (this.getClass().isInstance(obj)) {
+			final DatatypeAbstract other = (DatatypeAbstract) obj;
+			return Arrays.equals(this.identityValues, other.identityValues);
+		} else {
+			return false;
+		}
+	}
 
-    @Override
-    public String toString() {
-        final StringBuilder b = new StringBuilder();
-        b.append(this.getClass().getSimpleName());
-        b.append("{");
-        for (int i = 0; i < this.identityValues.length; ++i) {
-            final Object o = this.identityValues[i];
-            b.append(o.toString());
-            if (i > this.identityValues.length - 2) {
-                b.append(",");
-            }
-        }
-        b.append(Arrays.asList(this.identityValues));
-        b.append("}");
-        return b.toString();
-    }
+	@Override
+	public String toString() {
+		final StringBuilder b = new StringBuilder();
+		b.append(this.getClass().getSimpleName());
+		b.append("{");
+		for (int i = 0; i < this.identityValues.length; ++i) {
+			final Object o = this.identityValues[i];
+			b.append(o.toString());
+			if (i > this.identityValues.length - 2) {
+				b.append(",");
+			}
+		}
+		b.append(Arrays.asList(this.identityValues));
+		b.append("}");
+		return b.toString();
+	}
 
 }
