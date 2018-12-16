@@ -33,6 +33,7 @@ public class DatatypeProperty {
 	private final boolean isIdentity;
 	private final boolean isReference;
 	private final int identityIndex;
+	private final boolean isDefault;
 
 	public DatatypeProperty(final Method accessor, final String name, final boolean ignore, final boolean isIdentity, final int identityIndex,
 			final boolean isReference) {
@@ -42,6 +43,7 @@ public class DatatypeProperty {
 		this.isIdentity = isIdentity;
 		this.isReference = isReference;
 		this.identityIndex = identityIndex;
+		this.isDefault = false;
 	}
 
 	public DatatypeProperty(final Method accessor) {
@@ -51,6 +53,7 @@ public class DatatypeProperty {
 		this.isIdentity = this.calcIsIdentity(accessor);
 		this.isReference = this.calcIsReference(accessor);
 		this.identityIndex = this.calcIdentityIndex(accessor);
+		this.isDefault = this.calcIsDefault(accessor);
 	}
 
 	public String getName() {
@@ -59,6 +62,10 @@ public class DatatypeProperty {
 
 	public int getIdentityIndex() {
 		return this.identityIndex;
+	}
+
+	public boolean isDefault() {
+		return this.isDefault;
 	}
 
 	public boolean isIgnored() {
@@ -148,6 +155,14 @@ public class DatatypeProperty {
 		res &= 0 == accessor.getParameters().length; // TODO: may need to change this '&& 0==m.getParameters().length' to support getters with args for
 														// e.g. maps!
 		res &= accessor.getName().startsWith("get");
+		return res;
+	}
+
+	private boolean calcIsDefault(final Method accessor) {
+		boolean res = true;
+		res &= null == accessor.getDeclaredAnnotation(Identity.class);
+		res &= null == accessor.getDeclaredAnnotation(Reference.class);
+		res &= null == accessor.getDeclaredAnnotation(Query.class);
 		return res;
 	}
 

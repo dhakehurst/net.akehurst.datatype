@@ -21,6 +21,8 @@ import java.util.Set;
 
 public interface DatatypeInfo {
 
+	Map<String, DatatypeProperty> getAllProperty();
+
 	Map<String, DatatypeProperty> getProperty();
 
 	List<DatatypeProperty> getPropertyIdentity();

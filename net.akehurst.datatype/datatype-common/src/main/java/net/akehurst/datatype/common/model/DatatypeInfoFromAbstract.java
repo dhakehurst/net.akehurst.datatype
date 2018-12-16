@@ -39,31 +39,46 @@ public abstract class DatatypeInfoFromAbstract implements DatatypeInfo {
 	public abstract Set<DatatypeProperty> getDeclaredProperty();
 
 	@Override
+	public Map<String, DatatypeProperty> getAllProperty() {
+		final Map<String, DatatypeProperty> allProps = new HashMap<>();
+		if (null == this.class_) {
+
+		} else {
+			// TODO: handle overriden methods, i.e. don't include twice
+
+			if (null != this.class_.getSuperclass()) {
+				final DatatypeInfo di = this.registry.getDatatypeInfo(this.class_.getSuperclass());
+				if (null != di) {
+					final Map<String, DatatypeProperty> superclassMethods = di.getAllProperty();
+					allProps.putAll(superclassMethods);
+				}
+			}
+			for (final Class<?> intf : this.class_.getInterfaces()) {
+				final DatatypeInfo di = this.registry.getDatatypeInfo(intf);
+				if (null != di) {
+					final Map<String, DatatypeProperty> interfaceMethods = di.getAllProperty();
+					allProps.putAll(interfaceMethods);
+				}
+			}
+			for (final DatatypeProperty dp : this.getDeclaredProperty()) {
+				final DatatypeProperty sdp = allProps.get(dp.getName());
+				// only override a property if this one is explicit or super is default
+				if (null == sdp || !dp.isDefault() || sdp.isDefault()) {
+					allProps.put(dp.getName(), dp);
+				}
+			}
+		}
+		return allProps;
+	}
+
+	@Override
 	public Map<String, DatatypeProperty> getProperty() {
 		if (null == this.property_cache) {
-			if (null == this.class_) {
-				this.property_cache = new HashMap<>();
-			} else {
-				// TODO: handle overriden methods, i.e. don't include twice
-				this.property_cache = new HashMap<>();
-				if (null != this.class_.getSuperclass()) {
-					final DatatypeInfo di = this.registry.getDatatypeInfo(this.class_.getSuperclass());
-					if (null != di) {
-						final Map<String, DatatypeProperty> superclassMethods = di.getProperty();
-						this.property_cache.putAll(superclassMethods);
-					}
-				}
-				for (final Class<?> intf : this.class_.getInterfaces()) {
-					final DatatypeInfo di = this.registry.getDatatypeInfo(intf);
-					if (null != di) {
-						final Map<String, DatatypeProperty> interfaceMethods = di.getProperty();
-						this.property_cache.putAll(interfaceMethods);
-					}
-				}
-				for (final DatatypeProperty dp : this.getDeclaredProperty()) {
-					if (!dp.isIgnored()) {
-						this.property_cache.put(dp.getName(), dp);
-					}
+			this.property_cache = new HashMap<>();
+			final Map<String, DatatypeProperty> p = this.getAllProperty();
+			for (final DatatypeProperty dp : p.values()) {
+				if (!dp.isIgnored()) {
+					this.property_cache.put(dp.getName(), dp);
 				}
 			}
 		}
