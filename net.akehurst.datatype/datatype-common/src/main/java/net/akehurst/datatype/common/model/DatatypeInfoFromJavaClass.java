@@ -21,12 +21,10 @@ import java.util.Set;
 
 public class DatatypeInfoFromJavaClass extends DatatypeInfoFromAbstract implements DatatypeInfo {
 
-	private final Class<?> class_;
-	private Set<DatatypeProperty> property_cache;
+	private Set<DatatypeProperty> declaredProperty_cache;
 
 	public DatatypeInfoFromJavaClass(final DatatypeRegistry registry, final Class<?> class_) {
-		super(registry);
-		this.class_ = class_;
+		super(registry, class_);
 	}
 
 	public String getPackageName() {
@@ -38,30 +36,17 @@ public class DatatypeInfoFromJavaClass extends DatatypeInfoFromAbstract implemen
 	}
 
 	@Override
-	public Set<DatatypeProperty> getProperty() {
-		if (null == this.property_cache) {
-			if (null == this.class_) {
-				this.property_cache = new HashSet<>();
-			} else {
-				// TODO: handle overriden methods, i.e. don't include twice
-				this.property_cache = new HashSet<>();
-				if (null != this.class_.getSuperclass()) {
-					final Set<DatatypeProperty> superclassMethods = this.registry.getDatatypeInfo(this.class_.getSuperclass()).getProperty();
-					this.property_cache.addAll(superclassMethods);
-				}
-				for (final Class<?> intf : this.class_.getInterfaces()) {
-					final Set<DatatypeProperty> interfaceMethods = this.registry.getDatatypeInfo(intf).getProperty();
-					this.property_cache.addAll(interfaceMethods);
-				}
-				for (final Method m : this.class_.getDeclaredMethods()) {
-					if (this.registry.isProperty(m)) {
-						final DatatypeProperty dp = new DatatypeProperty(m);
-						this.property_cache.add(dp);
-					}
+	public Set<DatatypeProperty> getDeclaredProperty() {
+		if (null == this.declaredProperty_cache) {
+			this.declaredProperty_cache = new HashSet<>();
+			for (final Method m : this.class_.getDeclaredMethods()) {
+				if (this.registry.isProperty(m)) {
+					final DatatypeProperty dp = new DatatypeProperty(m);
+					this.declaredProperty_cache.add(dp);
 				}
 			}
 		}
-		return this.property_cache;
+		return this.declaredProperty_cache;
 	}
 
 }

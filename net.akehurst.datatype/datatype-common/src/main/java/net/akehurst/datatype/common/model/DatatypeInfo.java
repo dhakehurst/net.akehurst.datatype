@@ -16,11 +16,12 @@
 package net.akehurst.datatype.common.model;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public interface DatatypeInfo {
 
-	Set<DatatypeProperty> getProperty();
+	Map<String, DatatypeProperty> getProperty();
 
 	List<DatatypeProperty> getPropertyIdentity();
 

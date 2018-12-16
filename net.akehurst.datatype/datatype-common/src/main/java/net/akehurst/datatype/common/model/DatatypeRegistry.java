@@ -49,7 +49,7 @@ public class DatatypeRegistry {
 					if (null == cls) {
 						throw new DatatypeException("class not found for " + javaTypeName, null);
 					}
-					final DatatypeInfoFromDefinition datatype = new DatatypeInfoFromDefinition(this, javaTypeName);
+					final DatatypeInfoFromDefinition datatype = new DatatypeInfoFromDefinition(this, cls);
 					this.datatypes.put(cls, datatype);
 
 					final Map<String, JsonObject> jsonPropInfo = new HashMap<>();
@@ -63,7 +63,7 @@ public class DatatypeRegistry {
 							jsonPropInfo.put(pname, jpi);
 						}
 					}
-					for (final Method m : cls.getMethods()) {
+					for (final Method m : cls.getDeclaredMethods()) {
 						if (this.isProperty(m)) {
 							final DatatypeProperty pim = new DatatypeProperty(m);
 							final JsonObject jpi = jsonPropInfo.get(pim.getName());
@@ -71,10 +71,10 @@ public class DatatypeRegistry {
 								datatype.addPropertyInfo(pim.getName(), pim);
 							} else {
 								final boolean isIdentity = jpi.getBoolean("isIdentity", false);
-								final boolean isComposite = jpi.getBoolean("isComposite", true);
-								final boolean isReference = jpi.getBoolean("isReference", false);
 								final int identityIndex = jpi.getInt("identityIndex", -1);
-								final DatatypeProperty propInfo = new DatatypeProperty(m, pim.getName(), isIdentity, identityIndex, isComposite, isReference);
+								final boolean isReference = jpi.getBoolean("isReference", false);
+								final boolean ignored = jpi.getBoolean("ignored", false);
+								final DatatypeProperty propInfo = new DatatypeProperty(m, pim.getName(), ignored, isIdentity, identityIndex, isReference);
 								datatype.addPropertyInfo(pim.getName(), propInfo);
 							}
 						}
@@ -88,32 +88,31 @@ public class DatatypeRegistry {
 	}
 
 	public DatatypeInfo getDatatypeInfo(final Class<?> class_) {
-		if (null == class_) {
+		if (null == class_ || Object.class == class_) {
 			return null;
 		}
 		DatatypeInfo dti = this.datatypes.get(class_);
 		if (null == dti) {
 			dti = new DatatypeInfoFromJavaClass(this, class_);
-			if (this.isDeclaredDatatype(class_)) {
-				this.datatypes.put(class_, dti);
-			}
+			this.datatypes.put(class_, dti);
+
 		}
 		return dti;
 	}
 
-	public boolean isDatatype(final Class<?> cls) {
-		if (null == cls || Object.class == cls) {
+	public boolean isDatatype(final Class<?> class_) {
+		if (null == class_ || Object.class == class_) {
 			return false;
 		}
-		if (!this.datatypes.containsKey(cls) && null == cls.getAnnotation(Datatype.class)) {
+		if (!this.datatypes.containsKey(class_) && null == class_.getAnnotation(Datatype.class)) {
 			// check interfaces, superclasses are included because @Datatype is marked as @Inherited
-			for (final Class<?> intf : cls.getInterfaces()) {
+			for (final Class<?> intf : class_.getInterfaces()) {
 				if (this.isDatatype(intf)) {
 					return true;
 				}
 			}
 			// check interfaces of superclass
-			return this.isDatatype(cls.getSuperclass());
+			return this.isDatatype(class_.getSuperclass());
 		} else {
 			return true;
 		}
@@ -132,9 +131,6 @@ public class DatatypeRegistry {
 
 	public boolean isProperty(final Method m) {
 		if (null == m) {
-			return false;
-		}
-		if (!this.isDeclaredDatatype(m.getDeclaringClass())) {
 			return false;
 		}
 		if (null != m.getDeclaredAnnotation(Query.class)) {

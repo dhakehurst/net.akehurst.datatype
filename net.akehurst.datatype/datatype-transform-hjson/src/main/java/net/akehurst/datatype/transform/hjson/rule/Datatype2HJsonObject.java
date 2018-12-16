@@ -280,24 +280,22 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
 	public void updateLeft2Right(final Object left, final JsonObject right, final BinaryTransformer transformer) {
 		this.setRegistry(transformer);
 		final DatatypeInfo datatype = this.getDatatypeInfo(left.getClass());
-		for (final DatatypeProperty pi : datatype.getProperty()) {
+		for (final DatatypeProperty pi : datatype.getProperty().values()) {
 			final Object value = pi.getValueFrom(left);
 			boolean includeIt = null != value;
 			if (value instanceof Collection && ((Collection) value).isEmpty()) {
 				includeIt = false;
 			}
 			if (includeIt) {
-				if (pi.isComposite()) {
-					final JsonValue memberValue = transformer.transformLeft2Right((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class,
-							value);
-					right.add(pi.getName(), memberValue);
-				} else if (pi.isReference()) {
+				if (pi.isReference()) {
 					final JsonObject reference = this.getReferenceTo(value, transformer);
 					if (null != reference) {
 						right.add(pi.getName(), reference);
 					}
 				} else {
-					// do nothing
+					final JsonValue memberValue = transformer.transformLeft2Right((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class,
+							value);
+					right.add(pi.getName(), memberValue);
 				}
 			}
 		}
@@ -307,19 +305,17 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
 	public void updateRight2Left(final Object left, final JsonObject right, final BinaryTransformer transformer) {
 		this.setRegistry(transformer);
 		final DatatypeInfo datatype = this.getDatatypeInfo(left.getClass());
-		for (final DatatypeProperty pi : datatype.getProperty()) {
+		for (final DatatypeProperty pi : datatype.getProperty().values()) {
 			if (pi.isIdentity()) {
 				// should have been set during construction
 			} else {
 				final JsonValue memberValue = right.get(pi.getName());
 				if (null != memberValue) {
-					if (pi.isComposite()) {
-						this.setValueRight2Left(left, pi, memberValue, transformer);
-					} else if (pi.isReference()) {
+					if (pi.isReference()) {
 						final JsonValue rv = this.resolveReference(memberValue.asObject(), transformer);
 						this.setValueRight2Left(left, pi, rv, transformer);
 					} else {
-						// do nothing
+						this.setValueRight2Left(left, pi, memberValue, transformer);
 					}
 				}
 			}

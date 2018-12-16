@@ -29,17 +29,17 @@ public class DatatypeProperty {
 
 	private final Method accessor;
 	private final String name;
+	private final boolean ignore;
 	private final boolean isIdentity;
-	private final boolean isComposite;
 	private final boolean isReference;
 	private final int identityIndex;
 
-	public DatatypeProperty(final Method accessor, final String name, final boolean isIdentity, final int identityIndex, final boolean isComposite,
+	public DatatypeProperty(final Method accessor, final String name, final boolean ignore, final boolean isIdentity, final int identityIndex,
 			final boolean isReference) {
 		this.accessor = accessor;
 		this.name = name;
+		this.ignore = ignore;
 		this.isIdentity = isIdentity;
-		this.isComposite = isComposite;
 		this.isReference = isReference;
 		this.identityIndex = identityIndex;
 	}
@@ -47,8 +47,8 @@ public class DatatypeProperty {
 	public DatatypeProperty(final Method accessor) {
 		this.accessor = accessor;
 		this.name = this.calcName(accessor);
+		this.ignore = this.calcIgnore(accessor);
 		this.isIdentity = this.calcIsIdentity(accessor);
-		this.isComposite = this.calcIsComposite(accessor);
 		this.isReference = this.calcIsReference(accessor);
 		this.identityIndex = this.calcIdentityIndex(accessor);
 	}
@@ -61,12 +61,12 @@ public class DatatypeProperty {
 		return this.identityIndex;
 	}
 
-	public boolean isIdentity() {
-		return this.isIdentity;
+	public boolean isIgnored() {
+		return this.ignore;
 	}
 
-	public boolean isComposite() {
-		return this.isComposite;
+	public boolean isIdentity() {
+		return this.isIdentity;
 	}
 
 	public boolean isReference() {
@@ -121,6 +121,16 @@ public class DatatypeProperty {
 		return accessor.getName().substring(3, 4).toLowerCase() + accessor.getName().substring(4);
 	}
 
+	private boolean calcIgnore(final Method accessor) {
+		boolean res = true;
+		// res &= null != accessor.getDeclaringClass().getDeclaredAnnotation(Datatype.class);
+		res &= null != accessor.getDeclaredAnnotation(Query.class);
+		res &= 0 == accessor.getParameters().length; // TODO: may need to change this '&& 0==m.getParameters().length' to support getters with args for
+														// e.g. maps!
+		res &= accessor.getName().startsWith("get");
+		return res;
+	}
+
 	private boolean calcIsIdentity(final Method accessor) {
 		boolean res = true;
 		// res &= null != accessor.getDeclaringClass().getDeclaredAnnotation(Datatype.class);
@@ -135,18 +145,6 @@ public class DatatypeProperty {
 		boolean res = true;
 		// res &= null != accessor.getDeclaringClass().getDeclaredAnnotation(Datatype.class);
 		res &= null != accessor.getDeclaredAnnotation(Reference.class);
-		res &= 0 == accessor.getParameters().length; // TODO: may need to change this '&& 0==m.getParameters().length' to support getters with args for
-														// e.g. maps!
-		res &= accessor.getName().startsWith("get");
-		return res;
-	}
-
-	private boolean calcIsComposite(final Method accessor) {
-		boolean res = true;
-		// res &= null != accessor.getDeclaringClass().getDeclaredAnnotation(Datatype.class);
-		res &= null == accessor.getDeclaredAnnotation(Identity.class);
-		res &= null == accessor.getDeclaredAnnotation(Query.class);
-		res &= null == accessor.getDeclaredAnnotation(Reference.class);
 		res &= 0 == accessor.getParameters().length; // TODO: may need to change this '&& 0==m.getParameters().length' to support getters with args for
 														// e.g. maps!
 		res &= accessor.getName().startsWith("get");

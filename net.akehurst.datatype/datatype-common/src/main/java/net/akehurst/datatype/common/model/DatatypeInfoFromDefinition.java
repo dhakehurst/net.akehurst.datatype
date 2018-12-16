@@ -15,29 +15,25 @@
  */
 package net.akehurst.datatype.common.model;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 public class DatatypeInfoFromDefinition extends DatatypeInfoFromAbstract implements DatatypeInfo {
 
-	private final String fullClassName;
-	private final Map<String, DatatypeProperty> propertyInfo;
+	private final Set<DatatypeProperty> propertyInfo;
 
-	public DatatypeInfoFromDefinition(final DatatypeRegistry registry, final String fullClassName) {
-		super(registry);
-		this.fullClassName = fullClassName;
-		this.propertyInfo = new HashMap<>();
+	public DatatypeInfoFromDefinition(final DatatypeRegistry registry, final Class<?> class_) {
+		super(registry, class_);
+		this.propertyInfo = new HashSet<>();
 	}
 
 	@Override
-	public Set<DatatypeProperty> getProperty() {
-		return new HashSet<>(this.propertyInfo.values());
+	public Set<DatatypeProperty> getDeclaredProperty() {
+		return this.propertyInfo;
 	}
 
 	public void addPropertyInfo(final String pname, final DatatypeProperty propInfo) {
-		this.propertyInfo.put(pname, propInfo);
+		this.propertyInfo.add(propInfo);
 	}
 
 }

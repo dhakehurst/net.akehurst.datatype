@@ -16,30 +16,66 @@
 package net.akehurst.datatype.common.model;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public abstract class DatatypeInfoFromAbstract implements DatatypeInfo {
 
 	protected final DatatypeRegistry registry;
+	protected final Class<?> class_;
+	private Map<String, DatatypeProperty> property_cache;
 	private List<DatatypeProperty> propertyIdentity_cache;
 	private Set<DatatypeProperty> propertyReference_cache;
 	private Set<DatatypeProperty> propertyComposite_cache;
 
-	public DatatypeInfoFromAbstract(final DatatypeRegistry registry) {
+	public DatatypeInfoFromAbstract(final DatatypeRegistry registry, final Class<?> class_) {
 		this.registry = registry;
+		this.class_ = class_;
 	}
 
+	public abstract Set<DatatypeProperty> getDeclaredProperty();
+
 	@Override
-	public abstract Set<DatatypeProperty> getProperty();
+	public Map<String, DatatypeProperty> getProperty() {
+		if (null == this.property_cache) {
+			if (null == this.class_) {
+				this.property_cache = new HashMap<>();
+			} else {
+				// TODO: handle overriden methods, i.e. don't include twice
+				this.property_cache = new HashMap<>();
+				if (null != this.class_.getSuperclass()) {
+					final DatatypeInfo di = this.registry.getDatatypeInfo(this.class_.getSuperclass());
+					if (null != di) {
+						final Map<String, DatatypeProperty> superclassMethods = di.getProperty();
+						this.property_cache.putAll(superclassMethods);
+					}
+				}
+				for (final Class<?> intf : this.class_.getInterfaces()) {
+					final DatatypeInfo di = this.registry.getDatatypeInfo(intf);
+					if (null != di) {
+						final Map<String, DatatypeProperty> interfaceMethods = di.getProperty();
+						this.property_cache.putAll(interfaceMethods);
+					}
+				}
+				for (final DatatypeProperty dp : this.getDeclaredProperty()) {
+					if (!dp.isIgnored()) {
+						this.property_cache.put(dp.getName(), dp);
+					}
+				}
+			}
+		}
+		return this.property_cache;
+	}
 
 	@Override
 	public List<DatatypeProperty> getPropertyIdentity() {
 		if (null == this.propertyIdentity_cache) {
 			this.propertyIdentity_cache = new ArrayList<>();
-			for (final DatatypeProperty pi : this.getProperty()) {
-				if (pi.isIdentity()) {
+			for (final DatatypeProperty pi : this.getProperty().values()) {
+				if (!pi.isIgnored() && pi.isIdentity()) {
 					this.propertyIdentity_cache.add(pi);
 				}
 			}
@@ -59,8 +95,8 @@ public abstract class DatatypeInfoFromAbstract implements DatatypeInfo {
 	public Set<DatatypeProperty> getPropertyReference() {
 		if (null == this.propertyReference_cache) {
 			this.propertyReference_cache = new HashSet<>();
-			for (final DatatypeProperty pi : this.getProperty()) {
-				if (pi.isReference()) {
+			for (final DatatypeProperty pi : this.getProperty().values()) {
+				if (!pi.isIgnored() && pi.isReference()) {
 					this.propertyReference_cache.add(pi);
 				}
 			}
@@ -72,8 +108,8 @@ public abstract class DatatypeInfoFromAbstract implements DatatypeInfo {
 	public Set<DatatypeProperty> getPropertyComposite() {
 		if (null == this.propertyComposite_cache) {
 			this.propertyComposite_cache = new HashSet<>();
-			for (final DatatypeProperty pi : this.getProperty()) {
-				if (pi.isComposite()) {
+			for (final DatatypeProperty pi : this.getProperty().values()) {
+				if (!pi.isIgnored() && !pi.isReference()) {
 					this.propertyComposite_cache.add(pi);
 				}
 			}
@@ -81,4 +117,8 @@ public abstract class DatatypeInfoFromAbstract implements DatatypeInfo {
 		return this.propertyComposite_cache;
 	}
 
+	@Override
+	public String toString() {
+		return this.class_.getName();
+	}
 }
