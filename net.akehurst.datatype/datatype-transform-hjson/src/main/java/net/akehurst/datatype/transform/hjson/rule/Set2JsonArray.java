@@ -30,12 +30,12 @@ import net.akehurst.transform.binary.api.BinaryTransformer;
 public class Set2JsonArray extends Object2JsonValue<Set<Object>, JsonObject> {
 
     @Override
-    public boolean isValidForLeft2Right(final Set<Object> left) {
+    public boolean isValidForLeft2Right(final Set<Object> left, final BinaryTransformer transformer) {
         return null != left;
     }
 
     @Override
-    public boolean isValidForRight2Left(final JsonObject right) {
+    public boolean isValidForRight2Left(final JsonObject right, final BinaryTransformer transformer) {
         return null != right && Objects.equals("Set", right.getString("$type", ""));
     }
 

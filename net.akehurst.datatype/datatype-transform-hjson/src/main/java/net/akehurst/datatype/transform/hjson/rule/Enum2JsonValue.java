@@ -25,12 +25,12 @@ import net.akehurst.transform.binary.api.BinaryTransformer;
 public class Enum2JsonValue extends Object2JsonValue<Enum<?>, JsonObject> {
 
     @Override
-    public boolean isValidForLeft2Right(final Enum<?> left) {
+    public boolean isValidForLeft2Right(final Enum<?> left, final BinaryTransformer transformer) {
         return true;
     }
 
     @Override
-    public boolean isValidForRight2Left(final JsonObject right) {
+    public boolean isValidForRight2Left(final JsonObject right, final BinaryTransformer transformer) {
         return Objects.equals("Enum", right.getString("$type", ""));
     }
 

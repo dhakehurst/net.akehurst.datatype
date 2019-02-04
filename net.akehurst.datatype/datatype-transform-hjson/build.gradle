@@ -5,7 +5,7 @@ dependencies {
     api "org.hjson:hjson:3.0.0"
     api "org.jooq:jool-java-8:0.9.14"
     
-    implementation "net.akehurst.transform:binary:2.2.0"
+    implementation "net.akehurst.transform:binary:2.3.0"
     
     testImplementation "junit:junit:4.12"
 }

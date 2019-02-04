@@ -25,12 +25,12 @@ import net.akehurst.transform.binary.api.BinaryTransformer;
 public class Long2JsonValue extends Object2JsonValue<Long, JsonValue> {
 
     @Override
-    public boolean isValidForLeft2Right(final Long left) {
+    public boolean isValidForLeft2Right(final Long left, final BinaryTransformer transformer) {
         return true;
     }
 
     @Override
-    public boolean isValidForRight2Left(final JsonValue right) {
+    public boolean isValidForRight2Left(final JsonValue right, final BinaryTransformer transformer) {
         return right.isNumber(); // TODO: Integer vs long ?
     }
 

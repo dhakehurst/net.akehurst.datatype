@@ -27,12 +27,12 @@ import net.akehurst.transform.binary.api.BinaryTransformer;
 public class Uri2JsonValue extends Object2JsonValue<URI, JsonObject> {
 
     @Override
-    public boolean isValidForLeft2Right(final URI left) {
+    public boolean isValidForLeft2Right(final URI left, final BinaryTransformer transformer) {
         return true;
     }
 
     @Override
-    public boolean isValidForRight2Left(final JsonObject right) {
+    public boolean isValidForRight2Left(final JsonObject right, final BinaryTransformer transformer) {
         return Objects.equals("URI", right.getString("$type", ""));
     }
 

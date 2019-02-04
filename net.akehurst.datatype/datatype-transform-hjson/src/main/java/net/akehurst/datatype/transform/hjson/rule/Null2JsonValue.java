@@ -23,12 +23,12 @@ import net.akehurst.transform.binary.api.BinaryTransformer;
 public class Null2JsonValue extends Object2JsonValue<Void, JsonValue> {
 
     @Override
-    public boolean isValidForLeft2Right(final Void left) {
+    public boolean isValidForLeft2Right(final Void left, final BinaryTransformer transformer) {
         return null == left;
     }
 
     @Override
-    public boolean isValidForRight2Left(final JsonValue right) {
+    public boolean isValidForRight2Left(final JsonValue right, final BinaryTransformer transformer) {
         return right == JsonValue.NULL;
     }
 

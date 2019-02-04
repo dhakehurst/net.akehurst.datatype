@@ -26,12 +26,12 @@ import net.akehurst.transform.binary.api.BinaryTransformer;
 public class Instant2JsonValue extends Object2JsonValue<Instant, JsonObject> {
 
     @Override
-    public boolean isValidForLeft2Right(final Instant left) {
+    public boolean isValidForLeft2Right(final Instant left, final BinaryTransformer transformer) {
         return true;
     }
 
     @Override
-    public boolean isValidForRight2Left(final JsonObject right) {
+    public boolean isValidForRight2Left(final JsonObject right, final BinaryTransformer transformer) {
         return Objects.equals("Instant", right.getString("$type", ""));
     }
 

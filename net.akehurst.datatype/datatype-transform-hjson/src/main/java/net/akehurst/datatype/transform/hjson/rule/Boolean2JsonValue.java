@@ -25,12 +25,12 @@ import net.akehurst.transform.binary.api.BinaryTransformer;
 public class Boolean2JsonValue extends Object2JsonValue<Boolean, JsonValue> {
 
     @Override
-    public boolean isValidForLeft2Right(final Boolean left) {
+    public boolean isValidForLeft2Right(final Boolean left, final BinaryTransformer transformer) {
         return true;
     }
 
     @Override
-    public boolean isValidForRight2Left(final JsonValue right) {
+    public boolean isValidForRight2Left(final JsonValue right, final BinaryTransformer transformer) {
         return right.isBoolean();
     }
 

@@ -41,16 +41,16 @@ public class HJsonTransformerDefault extends BinaryTransformerBasic implements H
 
 	private Object javaRoot;
 	private JsonValue hjsonRoot;
-	public static DatatypeRegistry registry; // TODO: should not use static or public here
+	public DatatypeRegistry registry;
 
 	public HJsonTransformerDefault() {
 		this(null);
 	}
 
 	public HJsonTransformerDefault(final InputStream datatypeDefinitionResource) {
-		HJsonTransformerDefault.registry = new DatatypeRegistry();
+		this.registry = new DatatypeRegistry();
 		if (null != datatypeDefinitionResource) {
-			HJsonTransformerDefault.registry.registerFromResource(datatypeDefinitionResource);
+			this.registry.registerFromResource(datatypeDefinitionResource);
 		}
 		super.registerRule((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class);
 		super.registerRule(String2JsonValue.class);
@@ -68,7 +68,7 @@ public class HJsonTransformerDefault extends BinaryTransformerBasic implements H
 	}
 
 	public DatatypeRegistry getDatatypeRegistry() {
-		return HJsonTransformerDefault.registry;
+		return this.registry;
 	}
 
 	public JsonValue getHJsonRoot() {

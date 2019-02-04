@@ -30,12 +30,12 @@ import net.akehurst.transform.binary.api.BinaryTransformer;
 public class Map2JsonObject extends Object2JsonValue<Map<Object, Object>, JsonObject> {
 
     @Override
-    public boolean isValidForLeft2Right(final Map<Object, Object> left) {
+    public boolean isValidForLeft2Right(final Map<Object, Object> left, final BinaryTransformer transformer) {
         return null != left;
     }
 
     @Override
-    public boolean isValidForRight2Left(final JsonObject right) {
+    public boolean isValidForRight2Left(final JsonObject right, final BinaryTransformer transformer) {
         return null != right && Objects.equals("Map", right.getString("$type", ""));
     }
 

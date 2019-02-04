@@ -193,16 +193,16 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
 	}
 
 	@Override
-	public boolean isValidForLeft2Right(final Object left) {
+	public boolean isValidForLeft2Right(final Object left, final BinaryTransformer transformer) {
 		if (null == left) {
 			return false;
 		}
-		// TODO: should not use static thig here!
-		return HJsonTransformerDefault.registry.isDatatype(left.getClass());
+		this.setRegistry(transformer);
+		return this.registry.isDatatype(left.getClass());
 	}
 
 	@Override
-	public boolean isValidForRight2Left(final JsonObject right) {
+	public boolean isValidForRight2Left(final JsonObject right, final BinaryTransformer transformer) {
 		if (null == right) {
 			return false;
 		}
