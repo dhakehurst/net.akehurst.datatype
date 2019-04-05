@@ -23,7 +23,9 @@ import org.hjson.JsonValue;
 import net.akehurst.datatype.common.model.DatatypeRegistry;
 import net.akehurst.datatype.transform.hjson.rule.Boolean2JsonValue;
 import net.akehurst.datatype.transform.hjson.rule.Datatype2HJsonObject;
+import net.akehurst.datatype.transform.hjson.rule.Double2JsonValue;
 import net.akehurst.datatype.transform.hjson.rule.Enum2JsonValue;
+import net.akehurst.datatype.transform.hjson.rule.Float2JsonValue;
 import net.akehurst.datatype.transform.hjson.rule.Instant2JsonValue;
 import net.akehurst.datatype.transform.hjson.rule.Integer2JsonValue;
 import net.akehurst.datatype.transform.hjson.rule.List2JsonArray;
@@ -56,6 +58,8 @@ public class HJsonTransformerDefault extends BinaryTransformerBasic implements H
 		super.registerRule(String2JsonValue.class);
 		super.registerRule(Integer2JsonValue.class);
 		super.registerRule(Long2JsonValue.class);
+		super.registerRule(Float2JsonValue.class);
+		super.registerRule(Double2JsonValue.class);
 		super.registerRule(Boolean2JsonValue.class);
 		super.registerRule(Enum2JsonValue.class);
 		super.registerRule(Instant2JsonValue.class);
