@@ -24,39 +24,44 @@ import net.akehurst.transform.binary.api.BinaryTransformer;
 
 public class Integer2JsonValue extends Object2JsonValue<Integer, JsonValue> {
 
-    @Override
-    public boolean isValidForLeft2Right(final Integer left, final BinaryTransformer transformer) {
-        return true;
-    }
+	@Override
+	public boolean isValidForLeft2Right(final Integer left, final BinaryTransformer transformer) {
+		return true;
+	}
 
-    @Override
-    public boolean isValidForRight2Left(final JsonValue right, final BinaryTransformer transformer) {
-        return right.isNumber();
-    }
+	@Override
+	public boolean isValidForRight2Left(final JsonValue right, final BinaryTransformer transformer) {
+		if (right.isNumber()) {
+			final Integer v = right.asInt();
+			return v == Math.round(v);
+		} else {
+			return false;
+		}
+	}
 
-    @Override
-    public boolean isAMatch(final Integer left, final JsonValue right, final BinaryTransformer transformer) {
-        return Objects.equals(left, right.asInt());
-    }
+	@Override
+	public boolean isAMatch(final Integer left, final JsonValue right, final BinaryTransformer transformer) {
+		return Objects.equals(left, right.asInt());
+	}
 
-    @Override
-    public JsonValue constructLeft2Right(final Integer left, final BinaryTransformer transformer) {
-        return JsonValue.valueOf(left);
-    }
+	@Override
+	public JsonValue constructLeft2Right(final Integer left, final BinaryTransformer transformer) {
+		return JsonValue.valueOf(left);
+	}
 
-    @Override
-    public Integer constructRight2Left(final JsonValue right, final BinaryTransformer transformer) {
-        return right.asInt();
-    }
+	@Override
+	public Integer constructRight2Left(final JsonValue right, final BinaryTransformer transformer) {
+		return right.asInt();
+	}
 
-    @Override
-    public void updateLeft2Right(final Integer left, final JsonValue right, final BinaryTransformer transformer) {
+	@Override
+	public void updateLeft2Right(final Integer left, final JsonValue right, final BinaryTransformer transformer) {
 
-    }
+	}
 
-    @Override
-    public void updateRight2Left(final Integer left, final JsonValue right, final BinaryTransformer transformer) {
+	@Override
+	public void updateRight2Left(final Integer left, final JsonValue right, final BinaryTransformer transformer) {
 
-    }
+	}
 
 }

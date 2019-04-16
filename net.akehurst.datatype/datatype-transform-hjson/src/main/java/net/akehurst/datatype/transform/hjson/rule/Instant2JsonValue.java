@@ -25,41 +25,42 @@ import net.akehurst.transform.binary.api.BinaryTransformer;
 
 public class Instant2JsonValue extends Object2JsonValue<Instant, JsonObject> {
 
-    @Override
-    public boolean isValidForLeft2Right(final Instant left, final BinaryTransformer transformer) {
-        return true;
-    }
+	@Override
+	public boolean isValidForLeft2Right(final Instant left, final BinaryTransformer transformer) {
+		return true;
+	}
 
-    @Override
-    public boolean isValidForRight2Left(final JsonObject right, final BinaryTransformer transformer) {
-        return Objects.equals("Instant", right.getString("$type", ""));
-    }
+	@Override
+	public boolean isValidForRight2Left(final JsonObject right, final BinaryTransformer transformer) {
+		return Objects.equals("Instant", right.getString("$type", ""));
+	}
 
-    @Override
-    public boolean isAMatch(final Instant left, final JsonObject right, final BinaryTransformer transformer) {
-        return Objects.equals(left, Instant.parse(right.getString("$value", "")));
-    }
+	@Override
+	public boolean isAMatch(final Instant left, final JsonObject right, final BinaryTransformer transformer) {
+		return Objects.equals(left, Instant.parse(right.getString("$value", "")));
+	}
 
-    @Override
-    public JsonObject constructLeft2Right(final Instant left, final BinaryTransformer transformer) {
-        final JsonObject right = new JsonObject();
-        right.add("$type", "Instant");
-        return right;
-    }
+	@Override
+	public JsonObject constructLeft2Right(final Instant left, final BinaryTransformer transformer) {
+		final JsonObject right = new JsonObject();
+		right.add("$type", "Instant");
+		return right;
+	}
 
-    @Override
-    public Instant constructRight2Left(final JsonObject right, final BinaryTransformer transformer) {
-        return Instant.parse(right.getString("$value", ""));
-    }
+	@Override
+	public Instant constructRight2Left(final JsonObject right, final BinaryTransformer transformer) {
+		final long epochMilli = right.getLong("$value", 0);
+		return Instant.ofEpochMilli(epochMilli); // parse(right.getString("$value", ""));
+	}
 
-    @Override
-    public void updateLeft2Right(final Instant left, final JsonObject right, final BinaryTransformer transformer) {
-        right.add("$value", left.toString());
-    }
+	@Override
+	public void updateLeft2Right(final Instant left, final JsonObject right, final BinaryTransformer transformer) {
+		right.add("$value", left.toEpochMilli());
+	}
 
-    @Override
-    public void updateRight2Left(final Instant left, final JsonObject right, final BinaryTransformer transformer) {
+	@Override
+	public void updateRight2Left(final Instant left, final JsonObject right, final BinaryTransformer transformer) {
 
-    }
+	}
 
 }

@@ -31,8 +31,12 @@ public class Float2JsonValue extends Object2JsonValue<Float, JsonValue> {
 
 	@Override
 	public boolean isValidForRight2Left(final JsonValue right, final BinaryTransformer transformer) {
-		final float v = right.asFloat(); // TODO: distinguish from Double!
-		return v == Math.round(v);
+		if (right.isNumber()) {
+			final float v = right.asFloat(); // TODO: distinguish from Double!
+			return v == Math.round(v);
+		} else {
+			return false;
+		}
 	}
 
 	@Override

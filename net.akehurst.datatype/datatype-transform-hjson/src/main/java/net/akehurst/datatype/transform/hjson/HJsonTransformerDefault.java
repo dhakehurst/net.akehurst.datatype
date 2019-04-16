@@ -56,6 +56,7 @@ public class HJsonTransformerDefault extends BinaryTransformerBasic implements H
 		}
 		super.registerRule((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class);
 		super.registerRule(String2JsonValue.class);
+		// ensure Integer and Long are first so that they are matched before Float/Double
 		super.registerRule(Integer2JsonValue.class);
 		super.registerRule(Long2JsonValue.class);
 		super.registerRule(Float2JsonValue.class);

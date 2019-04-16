@@ -16,6 +16,7 @@
 package net.akehurst.datatype.common.model;
 
 import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,8 +36,7 @@ public class DatatypeProperty {
 	private final int identityIndex;
 	private final boolean isDefault;
 
-	public DatatypeProperty(final Method accessor, final String name, final boolean ignore, final boolean isIdentity, final int identityIndex,
-			final boolean isReference) {
+	public DatatypeProperty(final Method accessor, final String name, final boolean ignore, final boolean isIdentity, final int identityIndex, final boolean isReference) {
 		this.accessor = accessor;
 		this.name = name;
 		this.ignore = ignore;
@@ -78,6 +78,10 @@ public class DatatypeProperty {
 
 	public boolean isReference() {
 		return this.isReference;
+	}
+
+	public boolean isContainer() {
+		return Collection.class.isAssignableFrom(this.getType()) || Map.class.isAssignableFrom(this.getType());
 	}
 
 	public Class<?> getType() {

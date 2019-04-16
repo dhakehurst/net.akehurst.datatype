@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import org.hjson.JsonArray;
 import org.hjson.JsonObject;
 import org.hjson.JsonValue;
 import org.jooq.lambda.Seq;
@@ -192,6 +193,39 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
 		return this.registry.getDatatypeInfo(class_);
 	}
 
+	private JsonValue createContainerOfReferences(final BinaryTransformer transformer, final DatatypeProperty pi, final Object container) {
+		if (Set.class.isAssignableFrom(pi.getType())) {
+			final Set<?> left = (Set<?>) container;
+			final JsonObject right = new JsonObject();
+			right.add("$type", "Set");
+			final JsonArray elements = new JsonArray();
+			right.add("$elements", elements);
+			for (final Object elem : left) {
+				final JsonObject reference = this.getReferenceTo(elem, transformer);
+				if (null != reference) {
+					right.add(pi.getName(), reference);
+				}
+			}
+			return right;
+		}
+		if (List.class.isAssignableFrom(pi.getType())) {
+			final Set<?> left = (Set<?>) container;
+			final JsonObject right = new JsonObject();
+			right.add("$type", "List");
+			final JsonArray elements = new JsonArray();
+			right.add("$elements", elements);
+			for (final Object elem : left) {
+				final JsonObject reference = this.getReferenceTo(elem, transformer);
+				if (null != reference) {
+					right.add(pi.getName(), reference);
+				}
+			}
+			return right;
+		} else {
+			throw new DatatypeException("Unsupported container type of references " + pi.getType(), null);
+		}
+	}
+
 	@Override
 	public boolean isValidForLeft2Right(final Object left, final BinaryTransformer transformer) {
 		if (null == left) {
@@ -288,13 +322,17 @@ public class Datatype2HJsonObject extends Object2JsonValue<Object, JsonObject> i
 			}
 			if (includeIt) {
 				if (pi.isReference()) {
-					final JsonObject reference = this.getReferenceTo(value, transformer);
-					if (null != reference) {
-						right.add(pi.getName(), reference);
+					if (pi.isContainer()) {
+						final JsonValue rightContainer = this.createContainerOfReferences(transformer, pi, value);
+						right.add(pi.getName(), rightContainer);
+					} else {
+						final JsonObject reference = this.getReferenceTo(value, transformer);
+						if (null != reference) {
+							right.add(pi.getName(), reference);
+						}
 					}
 				} else {
-					final JsonValue memberValue = transformer.transformLeft2Right((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class,
-							value);
+					final JsonValue memberValue = transformer.transformLeft2Right((Class<BinaryRule<Object, JsonValue>>) (Object) Object2JsonValue.class, value);
 					right.add(pi.getName(), memberValue);
 				}
 			}
