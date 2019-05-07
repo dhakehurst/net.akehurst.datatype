@@ -23,6 +23,20 @@ buildscript {
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.6'
     }
 }
+
+def getPassword(String currentUser, String location) {
+   def stdout = new ByteArrayOutputStream()
+   def stderr = new ByteArrayOutputStream()
+   exec {
+       commandLine 'security', '-q', 'find-internet-password', '-a', currentUser, '-s', location, '-w'
+       standardOutput = stdout
+       errorOutput = stderr
+       ignoreExitValue true
+   }
+   //noinspection GroovyAssignabilityCheck
+      stdout.toString().trim()
+}
+
 subprojects {
 
 	apply plugin: 'java-library'
@@ -71,8 +85,8 @@ subprojects {
                 name 'itemis-akehurst'
                 url "https://projects.itemis.de/nexus/content/repositories/akehurst/"
                 credentials {
-                   username = project.hasProperty('username') ? project.property('username') : System.getenv('USERNAME')
-                   password = project.hasProperty('password') ? project.property('password') : System.getenv('PASSWORD')
+                   username = project.hasProperty('username') ? project.property('username') : System.getenv('USER')
+                   password = project.hasProperty('password') ? project.property('password') : getPassword(System.getenv('USER'), "projects.itemis.de") //System.getenv('PASSWORD')
                 }
             }
 		}
@@ -110,4 +124,5 @@ subprojects {
 			}
 		}
 	}
+	
 }
